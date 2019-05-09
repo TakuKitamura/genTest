@@ -1,0 +1,9 @@
+abc=123.3
+print(abc)
+print(456)
+def=(33+4999)*(13-243)/3+0.4/3
+print(def)
+print((33-49)*(13-23)+3+0.4/3)
+ghi="Hello, World!"
+print(ghi)
+print("Done!")
