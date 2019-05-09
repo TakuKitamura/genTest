@@ -1,4 +1,4 @@
-# genTest
+# GenTest
 良質なテストコードの自動生成による､ソフトウェアテスト環境の構築の実装｡
 
 ### Setup
@@ -15,3 +15,6 @@ $ go run main.go
 usage: gent file
 exit status 1
 ```
+
+### Author
+- Taku Kitamura
