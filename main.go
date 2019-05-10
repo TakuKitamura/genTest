@@ -9,6 +9,14 @@ import (
 
 func main() {
 	exitCode := 0
+
+	err := os.Setenv("GENTEST_MODE", "DEVELOP")
+	if err != nil {
+		fmt.Println(err.Error())
+		exitCode = 1
+		os.Exit(exitCode)
+	}
+
 	if len(os.Args) < 2 {
 		fmt.Println("usage: gent file")
 		exitCode = 1
@@ -30,6 +38,11 @@ func main() {
 		exitCode = 1
 		os.Exit(exitCode)
 	}
-	fmt.Print(output)
+	fmt.Println(
+		"\nOutput",
+		"\n---",
+		"\n\""+output+"\"",
+		"\n---",
+	)
 	os.Exit(exitCode)
 }

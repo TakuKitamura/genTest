@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"strconv"
 )
@@ -145,7 +146,7 @@ const (
 
 func bytePrint(bytes [][]byte) {
 	for _, v := range bytes {
-		fmt.Print(string(v) + ", ")
+		fmt.Println(string(v) + ", ")
 	}
 	fmt.Println()
 }
@@ -476,10 +477,6 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 
 			}
 
-			// if inArgumentState == 1 {
-			// 	inArgumentState = 2
-			// }
-
 			if inStringState == 1 {
 				errMsg := "err: invalid syntax."
 				return "", errors.New(errMsg)
@@ -489,31 +486,42 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 				errMsg := "err: invalid syntax."
 				return "", errors.New(errMsg)
 			}
-
-			// fmt.Println(
-			// 	"|inFormulaState: ",
-			// 	inFormulaState,
-			// 	"|inAssignState: ",
-			// 	inAssignState,
-			// 	"|inArgumentState: ",
-			// 	inArgumentState,
-			// 	"|inStringState: ",
-			// 	inStringState,
-			// 	"|variableName: ",
-			// 	string(variableName),
-			// 	"|variableValue: ",
-			// 	string(variableValue),
-			// 	"|argument: ",
-			// 	string(argument),
-			// )
-
-			if inFormulaState == 0 && inAssignState == 1 && inArgumentState == 0 && inStringState == 2 {
-				variable[string(variableName)] = string(variableValue)
-				// fmt.Println(1)
+			if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+				fmt.Println(
+					"\nDebug",
+					"\n---",
+					"\ninFormulaState: ",
+					inFormulaState,
+					"\ninAssignState: ",
+					inAssignState,
+					"\ninArgumentState: ",
+					inArgumentState,
+					"\ninStringState: ",
+					inStringState,
+					"\nvariable: ",
+					variable,
+					"\nvariableName: ",
+					string(variableName),
+					"\nvariableValue: ",
+					string(variableValue),
+					"\nargument: ",
+					string(argument),
+				)
 			}
 
+			// a="Hello!"
+			if inFormulaState == 0 && inAssignState == 1 && inArgumentState == 0 && inStringState == 2 {
+				variable[string(variableName)] = string(variableValue)
+				if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+					fmt.Println("\nFuncType: 1")
+				}
+			}
+
+			// a=1+2
 			if inFormulaState == 1 && inAssignState == 1 && inArgumentState == 0 && inStringState == 0 {
-				// fmt.Println(2)
+				if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+					fmt.Println("\nFuncType: 2")
+				}
 				rpnList, err := RPN(variableValue)
 				if err != nil {
 					return "", err
@@ -526,22 +534,31 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 				variable[string(variableName)] = string(result)
 			}
 
+			// print("Hello!")
 			if inFormulaState == 0 && inAssignState == 0 && inArgumentState == 2 && inStringState == 2 {
-				// fmt.Println(3)
+				if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+					fmt.Println("\nFuncType: 3")
+				}
 				if StandardFunction(variableName) == Print {
 					output += fmt.Sprint(string(variableValue)) + "\n"
 				}
 			}
 
+			// print(msg)
 			if inFormulaState == 0 && inAssignState == 0 && inArgumentState == 2 && inStringState == 0 {
-				// fmt.Println(4)
+				if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+					fmt.Println("\nFuncType: 4")
+				}
 				if StandardFunction(variableName) == Print {
 					output += fmt.Sprint(variable[string(argument)]) + "\n"
 				}
 			}
 
+			// print(1+2)
 			if inFormulaState == 1 && inAssignState == 0 && inArgumentState == 2 && inStringState == 0 {
-				// fmt.Println(5)
+				if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+					fmt.Println("\nFuncType: 5")
+				}
 				if StandardFunction(variableName) == Print {
 					rpnList, err := RPN(argument)
 					if err != nil {
@@ -554,6 +571,14 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 					}
 					output += fmt.Sprint(string(result)) + "\n"
 				}
+			}
+
+			if os.Getenv("GENTEST_MODE") == "DEVELOP" {
+				fmt.Println(
+					"\nnowOutput:",
+					"\n\""+output+"\"",
+					"\n---",
+				)
 			}
 
 		}

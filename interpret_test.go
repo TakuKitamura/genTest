@@ -9,6 +9,8 @@ import (
 )
 
 func TestInterpret(t *testing.T) {
+	os.Setenv("GENTEST_MODE", "TEST")
+
 	fp, _ := os.Open("./sample_code/grammar_example.gent")
 
 	scanner := bufio.NewScanner(fp)
