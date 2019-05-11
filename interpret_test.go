@@ -19,8 +19,8 @@ func TestInterpret(t *testing.T) {
 
 	expected := `123.3
 456
--385786.533334
-163.133333
+-385786.5333333333255723
+163.1333333333333258
 Hello, World!
 Done!
 `
