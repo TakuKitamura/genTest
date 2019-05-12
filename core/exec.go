@@ -179,7 +179,7 @@ func standardFunctionMap() map[string]StandardFunctionMap {
 						return false, errors.New(errMsg)
 					}
 
-					if i != 0 {
+					if i != len(x)-1 {
 						output += ", "
 					}
 				}
@@ -359,8 +359,10 @@ func operatorMap() map[string]OperatorMap {
 			},
 		},
 		string([]byte{Equal}): OperatorMap{
-			OperatorType: EqualityComparison,
-			Priority:     14,
+			Priority: 14,
+		},
+		string([]byte{Comma}): OperatorMap{
+			Priority: 15,
 		},
 	}
 	return operatorMap
@@ -377,7 +379,6 @@ func bytePrint(bytes [][]byte) {
 	for _, v := range bytes {
 		fmt.Println(string(v) + ", ")
 	}
-	fmt.Println()
 }
 
 func getLastAsciiCode(bytes []byte) byte {
@@ -515,14 +516,29 @@ func RPN(formula []byte) ([][]byte, error) {
 
 		break
 	}
-	fmt.Println("222")
-	bytePrint(normalFormulaList)
-	fmt.Println("111")
+	// fmt.Println("222")
+	// bytePrint(normalFormulaList)
+	// fmt.Println("111")
 
 	for _, token := range normalFormulaList {
 		if bytes.Equal(token, []byte{Dot}) == true {
 			errMsg := "unexpected [.]."
 			return nil, errors.New(errMsg)
+		}
+
+		// if bytes.Equal(token, []byte{Comma}) == true {
+		fmt.Println("TOKEN: ", string(token))
+		fmt.Println("RPNLIST: ")
+		bytePrint(rpnList)
+		fmt.Println("STACK: ")
+		bytePrint(stack)
+		fmt.Println()
+
+		// continue
+		// }
+
+		if bytes.Equal(token, []byte{Comma}) == true {
+
 		}
 
 		if regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(token) == true {
@@ -570,6 +586,7 @@ func RPN(formula []byte) ([][]byte, error) {
 							return nil, errors.New(errMsg)
 						}
 
+						fmt.Println("AAAAAA: ", string(token), operatorMap[string(token)].Priority)
 						if operatorMap[string(token)].Priority < operatorMap[string(topStack)].Priority {
 							stack = append(stack, token)
 							break
@@ -615,6 +632,7 @@ func RPN(formula []byte) ([][]byte, error) {
 	}
 
 	bytePrint(rpnList)
+	fmt.Println(99999)
 
 	return rpnList, nil
 }
@@ -664,16 +682,19 @@ func CalculateByRPN(rpnList [][]byte, object map[string]interface{}) ([]byte, er
 		fmt.Println("token, ", string(token))
 		fmt.Println("nowStack1, ")
 		bytePrint(stack)
+		fmt.Println()
 
 		if existNumber {
 			stack = append(stack, token)
 		} else if existOperator {
-
 			if bytes.Equal(token, []byte{Equal}) == true {
 				fmt.Println(777)
 				fmt.Println(stack)
 				object[string(stack[0])] = stack[1]
 				stack = [][]byte{}
+			} else if bytes.Equal(token, []byte{Comma}) == true {
+				// stack = append(stack, token)
+				fmt.Println("hello!")
 			} else {
 				accumulator := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
@@ -772,6 +793,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string]interface{}) ([]byte, er
 					}
 					sqrtArgs = append(sqrtArgs, f64)
 				}
+
 				v, err := standardFunctionMap[string(token)].NormalFunc(sqrtArgs...)
 				if err != nil {
 					return nil, err
@@ -788,7 +810,15 @@ func CalculateByRPN(rpnList [][]byte, object map[string]interface{}) ([]byte, er
 			} else if string(token) == "print" {
 				sqrtArgs := []interface{}{}
 				fmt.Println(argc, 123)
-				for i := len(stack) - 1; i >= len(stack)-argc; i-- {
+				// for i := len(stack) - 1; i >= len(stack)-argc; i-- {
+				// 	// f64, err := strconv.ParseFloat(string(stack[i]), 64)
+				// 	// if err != nil {
+				// 	// 	return nil, err
+				// 	// }
+				// 	sqrtArgs = append(sqrtArgs, stack[i])
+				// }
+
+				for i := 0; i < argc; i++ {
 					// f64, err := strconv.ParseFloat(string(stack[i]), 64)
 					// if err != nil {
 					// 	return nil, err
@@ -827,6 +857,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string]interface{}) ([]byte, er
 		fmt.Println("nowStack2, ")
 		bytePrint(stack)
 		fmt.Println("---")
+		fmt.Println()
 
 	}
 
