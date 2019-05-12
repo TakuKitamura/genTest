@@ -10,13 +10,13 @@ import (
 func TestRPN(t *testing.T) {
 	os.Setenv("GENTEST_MODE", "TEST")
 
-	rpnList, err := core.RPN([]byte("sqrt(2)*sqrt(2)"))
+	rpnList, err := core.RPN([]byte(`print(sqrt((33-49)*(13-23)+3+0.4/3))`))
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
-
-	result, err := core.CalculateByRPN(rpnList)
+	object := map[string]interface{}{}
+	result, err := core.CalculateByRPN(rpnList, object)
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)

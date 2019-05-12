@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
@@ -114,9 +115,8 @@ const (
 type OperatorMap struct {
 	OperatorType           OperaterType
 	Priority               int
-	ArithmeticFunc         func(x float64, y float64) float64
-	EqualityComparisonFunc func(x float64, y float64) bool
-	NormalFunc             func(x ...float64) float64
+	ArithmeticFunc         func(x interface{}, y interface{}) (interface{}, error)
+	EqualityComparisonFunc func(x interface{}, y interface{}) (bool, error)
 }
 
 func p(input interface{}) {
@@ -141,13 +141,53 @@ type StandardFunctionMap struct {
 	OperatorType OperaterType
 	Priority     int
 	Argc         int
-	NormalFunc   func(x ...float64) float64
+	NormalFunc   func(x ...interface{}) (interface{}, error)
 }
 
 func standardFunctionMap() map[string]StandardFunctionMap {
 	standardFunctionMap := map[string]StandardFunctionMap{
 		string("sqrt"): StandardFunctionMap{
-			OperatorType: Function, Argc: 1, Priority: 1, NormalFunc: func(x ...float64) float64 { return math.Sqrt(x[0]) },
+			OperatorType: Function,
+			Argc:         1,
+			Priority:     1,
+			NormalFunc: func(x ...interface{}) (interface{}, error) {
+				if len(x) != 1 {
+					errMsg := fmt.Sprintf("%s args is invalid.", string("sqrt"))
+					return nil, errors.New(errMsg)
+				}
+
+				if xv, ok := x[0].(float64); ok {
+					sqrtValue := interface{}(math.Sqrt(xv))
+					return sqrtValue, nil
+				}
+
+				errMsg := fmt.Sprintf("can't cast with %s", string("sqrt"))
+				return nil, errors.New(errMsg)
+			},
+		},
+		string("print"): StandardFunctionMap{
+			OperatorType: Function,
+			Argc:         1,
+			Priority:     1,
+			NormalFunc: func(x ...interface{}) (interface{}, error) {
+				output := "("
+				for i, v := range x {
+					if xv, ok := v.([]byte); ok {
+						output += string(xv)
+					} else {
+						errMsg := fmt.Sprintf("can't cast with %s", string("print"))
+						return false, errors.New(errMsg)
+					}
+
+					if i != 0 {
+						output += ", "
+					}
+				}
+				fmt.Println(9999)
+				output += ")"
+				fmt.Println(output)
+				return nil, nil
+			},
 		},
 	}
 	return standardFunctionMap
@@ -157,37 +197,170 @@ func operatorMap() map[string]OperatorMap {
 	operatorMap := map[string]OperatorMap{
 
 		string(Asterisk): OperatorMap{
-			OperatorType: Arithmetic, Priority: 3, ArithmeticFunc: func(x float64, y float64) float64 { return x * y },
+			OperatorType: Arithmetic,
+			Priority:     3,
+			ArithmeticFunc: func(x interface{}, y interface{}) (interface{}, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return interface{}(xv * yv), nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(Asterisk))
+				return false, errors.New(errMsg)
+			},
 		},
 		string(Slash): OperatorMap{
-			OperatorType: Arithmetic, Priority: 3, ArithmeticFunc: func(x float64, y float64) float64 { return x / y },
+			OperatorType: Arithmetic,
+			Priority:     3,
+			ArithmeticFunc: func(x interface{}, y interface{}) (interface{}, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return interface{}(xv / yv), nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(Slash))
+				return false, errors.New(errMsg)
+			},
 		},
 		string(Percent): OperatorMap{
-			OperatorType: Arithmetic, Priority: 3, ArithmeticFunc: func(x float64, y float64) float64 { return float64(int(x) % int(y)) },
+			OperatorType: Arithmetic,
+			Priority:     3,
+
+			ArithmeticFunc: func(x interface{}, y interface{}) (interface{}, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return interface{}(int(xv) % int(yv)), nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(Percent))
+				return false, errors.New(errMsg)
+			},
 		},
 		string(Plus): OperatorMap{
-			OperatorType: Arithmetic, Priority: 4, ArithmeticFunc: func(x float64, y float64) float64 { return x + y },
+			OperatorType: Arithmetic,
+			Priority:     4,
+			ArithmeticFunc: func(x interface{}, y interface{}) (interface{}, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return interface{}(xv + yv), nil
+					}
+				}
+
+				if xv, ok := x.(string); ok {
+					if yv, ok := y.(string); ok {
+						return interface{}(xv + yv), nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(Plus))
+				return false, errors.New(errMsg)
+			},
 		},
 		string(Minus): OperatorMap{
-			OperatorType: Arithmetic, Priority: 4, ArithmeticFunc: func(x float64, y float64) float64 { return x - y },
+			OperatorType: Arithmetic,
+			Priority:     4,
+			ArithmeticFunc: func(x interface{}, y interface{}) (interface{}, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return interface{}(xv - yv), nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(Minus))
+				return false, errors.New(errMsg)
+			},
 		},
-		string([]byte{LeftAngleBracket}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 6, EqualityComparisonFunc: func(x float64, y float64) bool { return x < y },
+		string(LeftAngleBracket): OperatorMap{
+			OperatorType: EqualityComparison,
+			Priority:     6,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv < yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(LeftAngleBracket))
+				return false, errors.New(errMsg)
+			},
 		},
 		string([]byte{LeftAngleBracket, Equal}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 6, EqualityComparisonFunc: func(x float64, y float64) bool { return x <= y },
+			OperatorType: EqualityComparison,
+			Priority:     6,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv > yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string([]byte{LeftAngleBracket, Equal}))
+				return false, errors.New(errMsg)
+			},
 		},
 		string([]byte{RightAngleBracket, Equal}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 6, EqualityComparisonFunc: func(x float64, y float64) bool { return x >= y },
+			OperatorType: EqualityComparison,
+			Priority:     6,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv >= yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string([]byte{RightAngleBracket, Equal}))
+				return false, errors.New(errMsg)
+			},
 		},
-		string([]byte{RightAngleBracket}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 6, EqualityComparisonFunc: func(x float64, y float64) bool { return x > y },
+		string(RightAngleBracket): OperatorMap{
+			OperatorType: EqualityComparison,
+			Priority:     6,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv > yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string(RightAngleBracket))
+				return false, errors.New(errMsg)
+			},
 		},
 		string([]byte{Equal, Equal}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 7, EqualityComparisonFunc: func(x float64, y float64) bool { return x == y },
+			OperatorType: EqualityComparison,
+			Priority:     7,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv == yv, nil
+					}
+				}
+
+				if xv, ok := x.(string); ok {
+					if yv, ok := y.(string); ok {
+						return xv == yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string([]byte{Equal, Equal}))
+				return false, errors.New(errMsg)
+			},
 		},
 		string([]byte{ExclamationMark, Equal}): OperatorMap{
-			OperatorType: EqualityComparison, Priority: 7, EqualityComparisonFunc: func(x float64, y float64) bool { return x != y },
+			OperatorType: EqualityComparison,
+			Priority:     7,
+			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
+				if xv, ok := x.(float64); ok {
+					if yv, ok := y.(float64); ok {
+						return xv != yv, nil
+					}
+				}
+
+				if xv, ok := x.(string); ok {
+					if yv, ok := y.(string); ok {
+						return xv != yv, nil
+					}
+				}
+				errMsg := fmt.Sprintf("can't cast with %s", string([]byte{ExclamationMark, Equal}))
+				return false, errors.New(errMsg)
+			},
+		},
+		string([]byte{Equal}): OperatorMap{
+			OperatorType: EqualityComparison,
+			Priority:     14,
 		},
 	}
 	return operatorMap
@@ -262,7 +435,33 @@ func RPN(formula []byte) ([][]byte, error) {
 		operatorsAndParenthesis = append(operatorsAndParenthesis, []byte(key))
 	}
 
+	sort.Slice(operatorsAndParenthesis, func(i, j int) bool { return len(operatorsAndParenthesis[i]) > len(operatorsAndParenthesis[j]) })
+
+	inStringSentence := 0
+	tempFormula := []byte{}
+	for i := 0; i < len(formula); i++ {
+
+		if inStringSentence == 0 {
+			if formula[i] == WhiteSpace {
+				continue
+			}
+		}
+
+		if formula[i] == DoubleQuotation {
+			if inStringSentence == 0 {
+				inStringSentence = 1
+			} else if inStringSentence == 1 {
+				inStringSentence = 0
+			}
+		}
+
+		tempFormula = append(tempFormula, formula[i])
+	}
+	fmt.Println(string(tempFormula), 777)
+	formula = tempFormula
+
 	for {
+		fmt.Println(string(formula))
 		matchNumberIndex := regexp.MustCompile(`^\d+\.?\d*|\.\d+`).FindIndex(formula)
 		matchNumber := []byte{}
 		if len(matchNumberIndex) > 0 {
@@ -287,6 +486,18 @@ func RPN(formula []byte) ([][]byte, error) {
 			}
 		}
 
+		matchStringIndex := regexp.MustCompile(`^".*?"`).FindIndex(formula)
+		matchString := []byte{}
+		if len(matchStringIndex) > 0 {
+			if matchStringIndex[0] == 0 {
+				matchString = formula[matchStringIndex[0]:matchStringIndex[1]]
+
+				normalFormulaList = append(normalFormulaList, matchString)
+				formula = formula[matchStringIndex[1]:]
+				continue
+			}
+		}
+
 		isMatchOperator := false
 		for _, v := range operatorsAndParenthesis {
 			if bytes.HasPrefix(formula, v) == true {
@@ -304,8 +515,9 @@ func RPN(formula []byte) ([][]byte, error) {
 
 		break
 	}
-
-	// bytePrint(normalFormulaList)
+	fmt.Println("222")
+	bytePrint(normalFormulaList)
+	fmt.Println("111")
 
 	for _, token := range normalFormulaList {
 		if bytes.Equal(token, []byte{Dot}) == true {
@@ -317,6 +529,9 @@ func RPN(formula []byte) ([][]byte, error) {
 			rpnList = append(rpnList, token)
 			continue
 		} else if regexp.MustCompile(`^[A-Za-z]+`).Match(token) == true {
+			stack = append(stack, token)
+			continue
+		} else if regexp.MustCompile(`^".*?"`).Match(token) == true {
 			stack = append(stack, token)
 			continue
 		} else if bytes.Equal(token, []byte{RightParenthesis}) == true {
@@ -399,12 +614,12 @@ func RPN(formula []byte) ([][]byte, error) {
 		return nil, errors.New(errMsg)
 	}
 
-	// bytePrint(rpnList)
+	bytePrint(rpnList)
 
 	return rpnList, nil
 }
 
-func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
+func CalculateByRPN(rpnList [][]byte, object map[string]interface{}) ([]byte, error) {
 	bytePrint(rpnList)
 	stack := [][]byte{}
 
@@ -415,9 +630,11 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 		operators = append(operators, []byte(key))
 	}
 
+	// sort.Slice(operators, func(i, j int) bool { return len(operators[i]) > len(operators[j]) })
 	for _, token := range rpnList {
 		existNumber := regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(token)
-		// existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(token)
+		existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(token)
+		existString := regexp.MustCompile(`^".*?"`).Match(token)
 
 		// Operaters := [][]byte{[]byte{Equal, Equal}, []byte{Caret}, []byte{Asterisk}, []byte{Slash}, []byte{Percent}, []byte{Plus}, []byte{Minus}}
 		existOperator := false
@@ -451,45 +668,90 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 		if existNumber {
 			stack = append(stack, token)
 		} else if existOperator {
-			accumulator := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			_, haveKey := operatorMap[string(token)]
-			if haveKey == false {
-				errMsg := "unexpected token: [' + token + ']."
-				return nil, errors.New(errMsg)
-			}
 
-			popedStack := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-
-			x, err := strconv.ParseFloat(string(popedStack), 64)
-			if err != nil {
-				return nil, err
-			}
-
-			y, err := strconv.ParseFloat(string(accumulator), 64)
-			if err != nil {
-				return nil, err
-			}
-
-			// operatorMap := operatorMap[string(token)]
-			operatorMap, haveKey := operatorMap[string(token)]
-			if haveKey == true {
-				if operatorMap.OperatorType == Arithmetic {
-					accumulator = []byte(strconv.FormatFloat(operatorMap.ArithmeticFunc(x, y), 'f', 16, 64))
-				} else if operatorMap.OperatorType == EqualityComparison {
-					accumulator = []byte(strconv.FormatBool(operatorMap.EqualityComparisonFunc(x, y)))
-				} else {
-					errMsg := "undefined OperatorType: " + string(operatorMap.OperatorType)
+			if bytes.Equal(token, []byte{Equal}) == true {
+				fmt.Println(777)
+				fmt.Println(stack)
+				object[string(stack[0])] = stack[1]
+				stack = [][]byte{}
+			} else {
+				accumulator := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				_, haveKey := operatorMap[string(token)]
+				if haveKey == false {
+					errMsg := "unexpected token: [' + token + ']."
 					return nil, errors.New(errMsg)
 				}
-			} else {
-				errMsg := "don't have token: " + string(token)
+
+				popedStack := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				fmt.Println(123)
+
+				var x interface{}
+				var y interface{}
+				var err error
+
+				if regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(popedStack) == true && regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(accumulator) {
+					x, err = strconv.ParseFloat(string(popedStack), 64)
+					if err != nil {
+						return nil, err
+					}
+
+					y, err = strconv.ParseFloat(string(accumulator), 64)
+					if err != nil {
+						return nil, err
+					}
+				} else if regexp.MustCompile(`^".*?"`).Match(popedStack) == true && regexp.MustCompile(`^".*?"`).Match(accumulator) {
+					x = string(popedStack[:len(popedStack)-1])
+					y = string(accumulator[1:])
+				}
+
+				fmt.Println(456)
+
+				// operatorMap := operatorMap[string(token)]
+				operatorMap, haveKey := operatorMap[string(token)]
+				if haveKey == true {
+					if operatorMap.OperatorType == Arithmetic {
+						v, err := operatorMap.ArithmeticFunc(x, y)
+						if err != nil {
+							return nil, err
+						}
+
+						if vFloat64, ok := v.(float64); ok {
+							accumulator = []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
+						} else if vString, ok := v.(string); ok {
+							accumulator = []byte(vString)
+						} else {
+							errMsg := "unknown InterfaceType"
+							return nil, errors.New(errMsg)
+						}
+
+					} else if operatorMap.OperatorType == EqualityComparison {
+						vBool, err := operatorMap.EqualityComparisonFunc(x, y)
+
+						if err != nil {
+							return nil, err
+
+						}
+						accumulator = []byte(strconv.FormatBool(vBool))
+					} else {
+						errMsg := "undefined OperatorType: " + string(operatorMap.OperatorType)
+						return nil, errors.New(errMsg)
+					}
+				} else {
+					errMsg := "don't have token: " + string(token)
+					return nil, errors.New(errMsg)
+				}
+
+				stack = append(stack, accumulator)
+
+			}
+		} else if existStandardFunction {
+
+			if len(stack) == 0 {
+				errMsg := fmt.Sprintf("%s mistake usage.", string(token))
 				return nil, errors.New(errMsg)
 			}
-
-			stack = append(stack, accumulator)
-		} else if existStandardFunction {
 
 			_, haveKey := standardFunctionMap[string(token)]
 			if haveKey == false {
@@ -500,8 +762,9 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 			argc := standardFunctionMap[string(token)].Argc
 
 			if string(token) == "sqrt" {
-				sqrtArgs := []float64{}
+				sqrtArgs := []interface{}{}
 				fmt.Println(argc, 123)
+
 				for i := len(stack) - 1; i >= len(stack)-argc; i-- {
 					f64, err := strconv.ParseFloat(string(stack[i]), 64)
 					if err != nil {
@@ -509,11 +772,51 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 					}
 					sqrtArgs = append(sqrtArgs, f64)
 				}
-				answer := []byte(strconv.FormatFloat(standardFunctionMap[string(token)].NormalFunc(sqrtArgs...), 'f', 16, 64))
+				v, err := standardFunctionMap[string(token)].NormalFunc(sqrtArgs...)
+				if err != nil {
+					return nil, err
+				}
+
+				if vFloat64, ok := v.(float64); ok {
+					answer := []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
+					stack = stack[:len(stack)-argc]
+					stack = append(stack, answer)
+				} else {
+					errMsg := "unknown InterfaceType"
+					return nil, errors.New(errMsg)
+				}
+			} else if string(token) == "print" {
+				sqrtArgs := []interface{}{}
+				fmt.Println(argc, 123)
+				for i := len(stack) - 1; i >= len(stack)-argc; i-- {
+					// f64, err := strconv.ParseFloat(string(stack[i]), 64)
+					// if err != nil {
+					// 	return nil, err
+					// }
+					sqrtArgs = append(sqrtArgs, stack[i])
+				}
+				standardFunctionMap[string(token)].NormalFunc(sqrtArgs...)
+
 				stack = stack[:len(stack)-argc]
-				stack = append(stack, answer)
+				fmt.Println(88888)
+				// if err != nil {
+				// 	return nil, err
+				// }
+
+				// if vFloat64, ok := v.(float64); ok {
+				// 	answer := []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
+				// 	stack = stack[:len(stack)-argc]
+				// 	stack = append(stack, answer)
+				// } else {
+				// 	errMsg := "unknown InterfaceType"
+				// 	return nil, errors.New(errMsg)
+				// }
 			}
 
+		} else if existAlphabet {
+			stack = append(stack, token)
+		} else if existString {
+			stack = append(stack, token)
 		} else {
 			if bytes.Equal(token, []byte{LeftParenthesis}) == false && bytes.Equal(token, []byte{RightParenthesis}) == false {
 				errMsg := "undefined token: " + string(token)
@@ -526,6 +829,8 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 		fmt.Println("---")
 
 	}
+
+	fmt.Println(object)
 
 	// bytePrint(stack)
 	// fmt.Println("here")
@@ -547,7 +852,15 @@ func CalculateByRPN(rpnList [][]byte) ([]byte, error) {
 		return nil, errors.New(errMsg)
 	}
 
-	return stack[0], nil
+	output := []byte{}
+
+	if len(stack) > 0 {
+		output = stack[0]
+	} else {
+		output = nil
+	}
+
+	return output, nil
 }
 
 func Exec(scanner *bufio.Scanner) (string, error) {
@@ -716,7 +1029,7 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 				return "", err
 			}
 
-			result, err := CalculateByRPN(rpnList)
+			result, err := CalculateByRPN(rpnList, nil)
 			if err != nil {
 				return "", err
 			}
@@ -754,7 +1067,7 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 					return "", err
 				}
 
-				result, err := CalculateByRPN(rpnList)
+				result, err := CalculateByRPN(rpnList, nil)
 				if err != nil {
 					return "", err
 				}
@@ -774,7 +1087,7 @@ func Exec(scanner *bufio.Scanner) (string, error) {
 					return "", err
 				}
 
-				result, err := CalculateByRPN(rpnList)
+				result, err := CalculateByRPN(rpnList, nil)
 				if err != nil {
 					return "", err
 				}
