@@ -10,16 +10,16 @@ import (
 func TestRPN(t *testing.T) {
 	os.Setenv("GENTEST_MODE", "TEST")
 
-	rpnList, err := core.RPN([]byte(`print("ABC" + "DEF")`))
+	rpnList, err := core.RPN([]byte(`a=sqrt(sqrt(9))*2`))
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
-	object := map[string]interface{}{}
-	result, err := core.CalculateByRPN(rpnList, object)
+	object := map[string][]byte{}
+	err = core.CalculateByRPN(rpnList, object)
 	if err != nil {
 		fmt.Println(err)
 		t.Fatal(err)
 	}
-	fmt.Println(string(result), 555)
+	fmt.Println(object, 777)
 }

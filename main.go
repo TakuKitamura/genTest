@@ -32,17 +32,17 @@ func main() {
 
 	scanner := bufio.NewScanner(fp)
 
-	output, err := core.Exec(scanner)
+	err = core.Exec(scanner)
 	if err != nil {
 		fmt.Println(err.Error())
 		exitCode = 1
 		os.Exit(exitCode)
 	}
-	fmt.Println(
-		"\nOutput",
-		"\n---",
-		"\n\""+output+"\"",
-		"\n---",
-	)
+	// fmt.Println(
+	// 	"\nOutput",
+	// 	"\n---",
+	// 	"\n\""+output+"\"",
+	// 	"\n---",
+	// )
 	os.Exit(exitCode)
 }
