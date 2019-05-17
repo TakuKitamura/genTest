@@ -1,9 +1,15 @@
-abc=123.3
-print(abc)
-print(456)
-def=(33+4999)*(13-243)/3+0.4/3
-print(def)
-print((33-49)*(13-23)+3+0.4/3)
-ghi="Hello, World!"
-print(ghi)
-print("Done!")
+print("このようなことしかできません｡")
+
+titleOne = "できることその1: 演算"
+print(titleOne)
+result = sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0)
+print("sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0) is ", result)
+
+titleTwo = "できることその2: 評価"
+print(titleTwo)
+condition = (1 < 2 && (3 != 3 || true))
+print("1 < 2 && (3 != 3 || true) is ", condition)
+
+titleThree = "できることその3: " + "文字列結合"
+print(titleThree)
+
