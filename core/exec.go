@@ -548,9 +548,8 @@ func RPN(formula []byte) ([][]byte, error) {
 
 		break
 	}
-	// fmt.Println("222")
+
 	// bytePrint(normalFormulaList)
-	// fmt.Println("111")
 
 	for _, token := range normalFormulaList {
 		if bytes.Equal(token, []byte{Dot}) == true {
@@ -1016,11 +1015,90 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	object := map[string][]byte{}
 
+	fromStartToAlphabetStack := map[int]int{}
+
+	isNextIndent := false
+
+	// fromStartToAlphabetStack := []int{}
+
 	for scanner.Scan() {
 		oneLine := scanner.Bytes()
 		if len(oneLine) == 0 {
 			continue
 		}
+
+		fromStartToAlphabet := 0
+
+		for fromStartToAlphabet = 0; fromStartToAlphabet < len(oneLine); fromStartToAlphabet++ {
+			word := oneLine[fromStartToAlphabet]
+			if word != WhiteSpace {
+				break
+			}
+		}
+
+		if len(oneLine) == fromStartToAlphabet {
+			continue
+		}
+
+		fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
+
+		maxFromStartToAlphabet := 0
+
+		for key := range fromStartToAlphabetStack {
+			if key > maxFromStartToAlphabet {
+				maxFromStartToAlphabet = key
+			}
+		}
+
+		if fromStartToAlphabet == maxFromStartToAlphabet {
+
+		} else if fromStartToAlphabet > maxFromStartToAlphabet {
+			if isNextIndent == false {
+				// if fromStartToAlphabet <= maxFromStartToAlphabet {
+				errMsg := "3: indent is invalid."
+				return errors.New(errMsg)
+				// }
+			}
+		} else if fromStartToAlphabet < maxFromStartToAlphabet {
+			_, haveKey := fromStartToAlphabetStack[fromStartToAlphabet]
+			if haveKey == false {
+				errMsg := "1: indent is invalid."
+				return errors.New(errMsg)
+			}
+		}
+
+		fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
+
+		// if isNextIndent == true {
+		fromStartToAlphabetStack[fromStartToAlphabet] = -1
+
+		fmt.Println("fromStartToAlphabetStack1: ", fromStartToAlphabetStack)
+
+		for key := range fromStartToAlphabetStack {
+			if key > fromStartToAlphabet {
+				delete(fromStartToAlphabetStack, key)
+			}
+		}
+
+		fmt.Println("fromStartToAlphabetStack2: ", fromStartToAlphabetStack)
+		// }
+
+		fmt.Println("isNextIndent: ", isNextIndent)
+
+		if isNextIndent == true {
+			if fromStartToAlphabet <= maxFromStartToAlphabet {
+				errMsg := "2: indent is invalid."
+				return errors.New(errMsg)
+			}
+		}
+
+		if regexp.MustCompile(`if.+:`).Match(oneLine) {
+			isNextIndent = true
+		} else {
+			isNextIndent = false
+		}
+
+		fmt.Println()
 
 		rpnList, err := RPN(oneLine)
 		if err != nil {

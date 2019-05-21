@@ -34,6 +34,7 @@ func TestInterpret(t *testing.T) {
 ("1 < 2 && (3 != 3 || true) is ", true)
 ("できることその3: 文字列結合")
 `
+
 	if output != expected {
 		errMsg := fmt.Sprintf("Expected output is \"%s\", but actual is \"%s\".", expected, output)
 		t.Fatal(errMsg)
