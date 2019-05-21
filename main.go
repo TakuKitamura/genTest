@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"genTest/core"
+	"io"
 	"os"
 )
 
@@ -32,7 +33,9 @@ func main() {
 
 	scanner := bufio.NewScanner(fp)
 
-	err = core.Exec(scanner)
+	w := new(io.Writer)
+
+	err = core.Exec(scanner, w)
 	if err != nil {
 		fmt.Println(err.Error())
 		exitCode = 1

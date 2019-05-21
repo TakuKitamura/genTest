@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"genTest/core"
 	"os"
@@ -15,14 +16,23 @@ func TestInterpret(t *testing.T) {
 
 	scanner := bufio.NewScanner(fp)
 
-	output, _ := core.Exec(scanner)
+	w := new(bytes.Buffer)
 
-	expected := `123.3
-456
--385786.5333333333255723
-163.1333333333333258
-Hello, World!
-Done!
+	err := core.Exec(scanner, w)
+
+	if err != nil {
+		errMsg := err.Error()
+		t.Fatal(errMsg)
+	}
+
+	output := w.String()
+
+	expected := `("このようなことしかできません｡")
+("できることその1: 演算")
+("sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0) is ", 1.4142135623730951)
+("できることその2: 評価")
+("1 < 2 && (3 != 3 || true) is ", true)
+("できることその3: 文字列結合")
 `
 	if output != expected {
 		errMsg := fmt.Sprintf("Expected output is \"%s\", but actual is \"%s\".", expected, output)

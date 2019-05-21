@@ -13,6 +13,7 @@
 
 # Env
 playground.gent
+playground_test.go
 .vscode
 
 # temp

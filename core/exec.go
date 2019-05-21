@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"math"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -145,7 +147,7 @@ type StandardFunctionMap struct {
 	NormalFunc   func(x ...interface{}) (interface{}, error)
 }
 
-func standardFunctionMap() map[string]StandardFunctionMap {
+func standardFunctionMap(w io.Writer) map[string]StandardFunctionMap {
 	standardFunctionMap := map[string]StandardFunctionMap{
 		string("sqrt"): StandardFunctionMap{
 			OperatorType: Function,
@@ -187,7 +189,8 @@ func standardFunctionMap() map[string]StandardFunctionMap {
 				}
 				//	fmt.Println(9999)
 				output += ")"
-				fmt.Println(output)
+				// fmt.Println(output)
+				fmt.Fprintln(w, output)
 				return nil, nil
 			},
 		},
@@ -666,14 +669,14 @@ func RPN(formula []byte) ([][]byte, error) {
 	return rpnList, nil
 }
 
-func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
+func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) error {
 	// bytePrint(rpnList)
 	stack := [][]byte{}
 
 	operatorMap := operatorMap()
 	operators := [][]byte{}
 
-	for key, _ := range operatorMap {
+	for key := range operatorMap {
 		operators = append(operators, []byte(key))
 	}
 
@@ -692,12 +695,26 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
 			}
 		}
 
-		standardFunctionMap := standardFunctionMap()
+		var standardFunction map[string]StandardFunctionMap
+
+		mode := os.Getenv("GENTEST_MODE")
+
+		if mode == "DEVELOP" {
+			w = os.Stdout
+		} else if mode == "TEST" {
+
+		} else {
+			errMsg := "undefined mode."
+			return errors.New(errMsg)
+		}
+
+		standardFunction = standardFunctionMap(w)
+
 		standardFunctions := [][]byte{}
 
 		existStandardFunction := false
 
-		for key, _ := range standardFunctionMap {
+		for key := range standardFunction {
 			standardFunctions = append(standardFunctions, []byte(key))
 		}
 
@@ -845,13 +862,13 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
 				return errors.New(errMsg)
 			}
 
-			_, haveKey := standardFunctionMap[string(token)]
+			_, haveKey := standardFunction[string(token)]
 			if haveKey == false {
 				errMsg := "unexpected token: [' + token + ']."
 				return errors.New(errMsg)
 			}
 
-			argc := standardFunctionMap[string(token)].Argc
+			argc := standardFunction[string(token)].Argc
 
 			if string(token) == "sqrt" {
 				sqrtArgs := []interface{}{}
@@ -877,7 +894,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
 					sqrtArgs = append(sqrtArgs, f64)
 				}
 
-				v, err := standardFunctionMap[string(token)].NormalFunc(sqrtArgs...)
+				v, err := standardFunction[string(token)].NormalFunc(sqrtArgs...)
 				if err != nil {
 					return err
 				}
@@ -923,7 +940,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
 					printArgs = append(printArgs, stack[i])
 
 				}
-				standardFunctionMap[string(token)].NormalFunc(printArgs...)
+				standardFunction[string(token)].NormalFunc(printArgs...)
 
 				// stack = stack[:len(stack)-argc]
 
@@ -995,7 +1012,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte) error {
 	return nil
 }
 
-func Exec(scanner *bufio.Scanner) error {
+func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	object := map[string][]byte{}
 
@@ -1010,7 +1027,7 @@ func Exec(scanner *bufio.Scanner) error {
 			return err
 		}
 
-		err = CalculateByRPN(rpnList, object)
+		err = CalculateByRPN(rpnList, object, w)
 		if err != nil {
 			return err
 		}

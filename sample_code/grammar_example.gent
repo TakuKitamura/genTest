@@ -12,4 +12,3 @@ print("1 < 2 && (3 != 3 || true) is ", condition)
 
 titleThree = "できることその3: " + "文字列結合"
 print(titleThree)
-
