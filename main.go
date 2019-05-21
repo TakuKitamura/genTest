@@ -33,9 +33,10 @@ func main() {
 
 	scanner := bufio.NewScanner(fp)
 
-	w := new(io.Writer)
+	var w io.Writer
 
 	err = core.Exec(scanner, w)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		exitCode = 1
