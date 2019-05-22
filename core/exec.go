@@ -173,10 +173,11 @@ func standardFunctionMap(w io.Writer) map[string]StandardFunctionMap {
 			Argc:         1,
 			Priority:     1,
 			NormalFunc: func(x ...interface{}) (interface{}, error) {
-				output := "("
+				output := ""
 				for i, v := range x {
 					if xv, ok := v.([]byte); ok {
 						xv = bytes.Replace(xv, []byte("\\n"), []byte{NewLine}, -1)
+						xv = bytes.Replace(xv, []byte("\""), nil, -1)
 						output += string(xv)
 					} else {
 						errMsg := fmt.Sprintf("can't cast with %s", string("print"))
@@ -184,12 +185,12 @@ func standardFunctionMap(w io.Writer) map[string]StandardFunctionMap {
 					}
 
 					if i != len(x)-1 {
-						output += ", "
+						output += " "
 					}
 				}
 				//	fmt.Println(9999)
-				output += ")"
-				// fmt.Println(output)
+				// output += ")"
+				// fmt.Println(output
 				fmt.Fprintln(w, output)
 				return nil, nil
 			},
@@ -292,7 +293,7 @@ func operatorMap() map[string]OperatorMap {
 			EqualityComparisonFunc: func(x interface{}, y interface{}) (bool, error) {
 				if xv, ok := x.(float64); ok {
 					if yv, ok := y.(float64); ok {
-						return xv > yv, nil
+						return xv <= yv, nil
 					}
 				}
 				errMsg := fmt.Sprintf("can't cast with %s", string([]byte{LeftAngleBracket, Equal}))
@@ -668,7 +669,7 @@ func RPN(formula []byte) ([][]byte, error) {
 	return rpnList, nil
 }
 
-func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) error {
+func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]byte, error) {
 	// bytePrint(rpnList)
 	stack := [][]byte{}
 
@@ -704,7 +705,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 
 		} else {
 			errMsg := "undefined mode."
-			return errors.New(errMsg)
+			return nil, errors.New(errMsg)
 		}
 
 		standardFunction = standardFunctionMap(w)
@@ -725,7 +726,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 		}
 
 		//	fmt.Println("token, ", string(token))
-		//	fmt.Println("nowStack1, ")
+		// fmt.Println("nowStack1, ")
 		// bytePrint(stack)
 		//	fmt.Println()
 
@@ -746,7 +747,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 				_, haveKey := operatorMap[string(token)]
 				if haveKey == false {
 					errMsg := "unexpected token: [' + token + ']."
-					return errors.New(errMsg)
+					return nil, errors.New(errMsg)
 				}
 
 				popedStack := stack[len(stack)-1]
@@ -762,12 +763,12 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 					if regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(popedStack) == true && regexp.MustCompile(`^\d+\.?\d*|\.\d+`).Match(accumulator) {
 						x, err = strconv.ParseFloat(string(popedStack), 64)
 						if err != nil {
-							return err
+							return nil, err
 						}
 
 						y, err = strconv.ParseFloat(string(accumulator), 64)
 						if err != nil {
-							return err
+							return nil, err
 						}
 						break
 					} else if regexp.MustCompile(`^".*?"`).Match(popedStack) == true && regexp.MustCompile(`^".*?"`).Match(accumulator) {
@@ -780,11 +781,11 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 					} else if (string(popedStack) == "true" || string(popedStack) == "false") || (string(accumulator) == "true" || string(accumulator) == "false") {
 						x, err = strconv.ParseBool(string(popedStack))
 						if err != nil {
-							return err
+							return nil, err
 						}
 						y, err = strconv.ParseBool(string(accumulator))
 						if err != nil {
-							return err
+							return nil, err
 						}
 						break
 					} else {
@@ -804,11 +805,11 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 							accumulator = yv
 						}
 
-						fmt.Println(popedStack, accumulator, xv, yv)
+						// fmt.Println(popedStack, accumulator, xv, yv)
 
 						if len(xv) == 0 && len(yv) == 0 {
 							errMsg := "x or y is invalid."
-							return errors.New(errMsg)
+							return nil, errors.New(errMsg)
 						}
 					}
 
@@ -822,33 +823,36 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 					if operatorMap.OperatorType == Arithmetic {
 						v, err := operatorMap.ArithmeticFunc(x, y)
 						if err != nil {
-							return err
+							return nil, err
 						}
 
 						if vFloat64, ok := v.(float64); ok {
 							accumulator = []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
 						} else if vString, ok := v.(string); ok {
 							accumulator = []byte(vString)
+						} else if vInt, ok := v.(int); ok {
+							accumulator = []byte(strconv.Itoa(vInt))
 						} else {
+							fmt.Println(v)
 							errMsg := "unknown InterfaceType"
-							return errors.New(errMsg)
+							return nil, errors.New(errMsg)
 						}
 
 					} else if operatorMap.OperatorType == EqualityComparison {
 						vBool, err := operatorMap.EqualityComparisonFunc(x, y)
 
 						if err != nil {
-							return err
+							return nil, err
 
 						}
 						accumulator = []byte(strconv.FormatBool(vBool))
 					} else {
 						errMsg := "undefined OperatorType: " + string(operatorMap.OperatorType)
-						return errors.New(errMsg)
+						return nil, errors.New(errMsg)
 					}
 				} else {
 					errMsg := "don't have token: " + string(token)
-					return errors.New(errMsg)
+					return nil, errors.New(errMsg)
 				}
 
 				stack = append(stack, accumulator)
@@ -858,13 +862,13 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 
 			if len(stack) == 0 {
 				errMsg := fmt.Sprintf("%s mistake usage.", string(token))
-				return errors.New(errMsg)
+				return nil, errors.New(errMsg)
 			}
 
 			_, haveKey := standardFunction[string(token)]
 			if haveKey == false {
 				errMsg := "unexpected token: [' + token + ']."
-				return errors.New(errMsg)
+				return nil, errors.New(errMsg)
 			}
 
 			argc := standardFunction[string(token)].Argc
@@ -881,12 +885,12 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 					if haveKey == true {
 						f64, err = strconv.ParseFloat(string(v), 64)
 						if err != nil {
-							return err
+							return nil, err
 						}
 					} else {
 						f64, err = strconv.ParseFloat(string(stack[i]), 64)
 						if err != nil {
-							return err
+							return nil, err
 						}
 					}
 
@@ -895,7 +899,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 
 				v, err := standardFunction[string(token)].NormalFunc(sqrtArgs...)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				if vFloat64, ok := v.(float64); ok {
@@ -904,7 +908,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 					stack = append(stack, answer)
 				} else {
 					errMsg := "unknown InterfaceType"
-					return errors.New(errMsg)
+					return nil, errors.New(errMsg)
 				}
 			} else if string(token) == "print" {
 				printArgs := []interface{}{}
@@ -967,20 +971,21 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 		} else {
 			if bytes.Equal(token, []byte{LeftParenthesis}) == false && bytes.Equal(token, []byte{RightParenthesis}) == false {
 				errMsg := "undefined token: " + string(token)
-				return errors.New(errMsg)
+				return nil, errors.New(errMsg)
 			}
 		}
 
-		//	fmt.Println("nowStack2, ")
+		// fmt.Println("nowStack2, ")
 		// bytePrint(stack)
-		//	fmt.Println("---")
-		//	fmt.Println()
+		// fmt.Println("---")
+		// fmt.Println()
 
 	}
 
 	//	fmt.Println(object)
 
 	// bytePrint(stack)
+	// fmt.Println(stack, 77777)
 	// fmt.Println("here")
 
 	// for {
@@ -991,13 +996,36 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 	// 		break
 	// 	}
 	// }
+
+	if len(stack) == 1 {
+		if string(stack[0]) == "true" {
+			return []byte("true"), nil
+		} else if string(stack[0]) == "false" {
+			return []byte("false"), nil
+		}
+
+		existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(stack[0])
+		if existAlphabet == true {
+			v, haveKey := object[string(stack[0])]
+			if haveKey == false {
+				fmt.Println("---" + string(stack[0]) + "---")
+				errMsg := "unknown variable."
+				return nil, errors.New(errMsg)
+			}
+			return v, nil
+		}
+
+		return stack[0], nil
+	}
+
 	if len(stack) > 1 {
+
 		if bytes.Equal(stack[1], []byte{Dot}) == true {
 			errMsg := "unexpected [.]."
-			return errors.New(errMsg)
+			return nil, errors.New(errMsg)
 		}
 		errMsg := fmt.Sprintf("failed calculate.\nnow stack: %s", stack)
-		return errors.New(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	// output := []byte{}
@@ -1008,7 +1036,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) err
 	// 	output = nil
 	// }
 
-	return nil
+	return nil, nil
 }
 
 func Exec(scanner *bufio.Scanner, w io.Writer) error {
@@ -1020,6 +1048,10 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 	isNextIndent := false
 
 	// fromStartToAlphabetStack := []int{}
+
+	boundaryIndent := 0
+
+	isConditionTrue := false
 
 	for scanner.Scan() {
 		oneLine := scanner.Bytes()
@@ -1039,8 +1071,6 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		if len(oneLine) == fromStartToAlphabet {
 			continue
 		}
-
-		fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
 
 		maxFromStartToAlphabet := 0
 
@@ -1067,12 +1097,12 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 		}
 
-		fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
+		// fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
 
 		// if isNextIndent == true {
 		fromStartToAlphabetStack[fromStartToAlphabet] = -1
 
-		fmt.Println("fromStartToAlphabetStack1: ", fromStartToAlphabetStack)
+		// fmt.Println("fromStartToAlphabetStack1: ", fromStartToAlphabetStack)
 
 		for key := range fromStartToAlphabetStack {
 			if key > fromStartToAlphabet {
@@ -1080,10 +1110,10 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 		}
 
-		fmt.Println("fromStartToAlphabetStack2: ", fromStartToAlphabetStack)
-		// }
+		// fmt.Println("fromStartToAlphabetStack2: ", fromStartToAlphabetStack)
+		// // }
 
-		fmt.Println("isNextIndent: ", isNextIndent)
+		// fmt.Println("isNextIndent: ", isNextIndent)
 
 		if isNextIndent == true {
 			if fromStartToAlphabet <= maxFromStartToAlphabet {
@@ -1093,22 +1123,61 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		}
 
 		if regexp.MustCompile(`if.+:`).Match(oneLine) {
+			a := regexp.MustCompile(` *if *`).ReplaceAll(oneLine, nil)
+			// oneLine = []byte("print(" + string(a[:len(a)-1]) + ")")
+			oneLine = a[:len(a)-1]
+
+			// fmt.Println(string(oneLine))
+			// fmt.Println(object)
 			isNextIndent = true
 		} else {
 			isNextIndent = false
 		}
 
-		fmt.Println()
+		// fmt.Println("--" + string(oneLine) + "--")
+		// fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
+		// fmt.Println("boundaryIndent: ", boundaryIndent)
+
+		if isConditionTrue == true {
+			if boundaryIndent < fromStartToAlphabet {
+
+			} else {
+				// fmt.Println(boundaryIndent, fromStartToAlphabet, 333)
+				// errMsg := "4: indent is invalid."
+				// return errors.New(errMsg)
+			}
+		} else {
+			if boundaryIndent < fromStartToAlphabet {
+				// fmt.Println(989999)
+				continue
+			} else {
+
+			}
+		}
 
 		rpnList, err := RPN(oneLine)
+
 		if err != nil {
 			return err
 		}
 
-		err = CalculateByRPN(rpnList, object, w)
+		returnValue, err := CalculateByRPN(rpnList, object, w)
 		if err != nil {
 			return err
 		}
+
+		if returnValue != nil && isNextIndent == true {
+			boundaryIndent = fromStartToAlphabet
+			// fmt.Println("returnValue: ", string(returnValue))
+
+			if string(returnValue) == "true" {
+				isConditionTrue = true
+			} else if string(returnValue) == "false" {
+				isConditionTrue = false
+			}
+		}
+		// fmt.Println("isConditionTrue: ", isConditionTrue)
+		// fmt.Println()
 	}
 	return nil
 }

@@ -3,12 +3,31 @@ print("このようなことしかできません｡")
 titleOne = "できることその1: 演算"
 print(titleOne)
 result = sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0)
-print("sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0) is ", result)
+print("sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0) is", result)
 
 titleTwo = "できることその2: 評価"
 print(titleTwo)
 condition = (1 < 2 && (3 != 3 || true))
-print("1 < 2 && (3 != 3 || true) is ", condition)
+print("1 < 2 && (3 != 3 || true) is", condition)
 
 titleThree = "できることその3: " + "文字列結合"
 print(titleThree)
+
+titleFour = "できることその4: if文による分岐"
+print(titleFour)
+
+year = 2020
+print(year, "年は")
+if year >= 0:
+    if year % 4 == 0:
+        if year % 100 == 0:
+            if year % 400 == 0:
+                print("うるう年です｡")
+            if year % 400 != 0:
+                print("うるう年ではありません｡")
+        if year % 100 != 0:
+            print("うるう年です｡")
+    if year % 4 != 0:
+        print("うるう年ではありません｡")
+if year < 0:
+    print("適切な西暦ではありません｡")
