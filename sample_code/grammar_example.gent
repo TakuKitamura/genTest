@@ -13,7 +13,7 @@ print("1 < 2 && (3 != 3 || true) is", condition)
 titleThree = "できることその3: " + "文字列結合"
 print(titleThree)
 
-titleFour = "できることその4: if文による分岐"
+titleFour = "できることその4: IF文による分岐"
 print(titleFour)
 
 year = 2020
