@@ -1081,6 +1081,8 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		lines = append(lines, oneLine)
 	}
 
+	lines = append(lines, nil)
+
 	forState := [][][]byte{}
 
 	forStartLine := []int{}
@@ -1090,6 +1092,8 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 	for i := 0; i < len(lines); i++ {
 
 		oneLine := lines[i]
+
+		// fmt.Println("oneLine: ", string(oneLine))
 
 		fromStartToAlphabet := 0
 
@@ -1108,13 +1112,14 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 		}
 
-		fmt.Println("fromStartToAlphabet0: ", fromStartToAlphabet)
+		// fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
 		// fmt.Println("fromStartToAlphabetStack: ", fromStartToAlphabetStack)
-		fmt.Println("maxFromStartToAlphabet0: ", maxFromStartToAlphabet)
+		// fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
 
 		if fromStartToAlphabet == maxFromStartToAlphabet {
-
+			// fmt.Println("oneLine5:", string(oneLine))
 		} else if fromStartToAlphabet > maxFromStartToAlphabet {
+			// fmt.Println("oneLine3:", string(oneLine))
 			if isNextIndent == false {
 				// if fromStartToAlphabet <= maxFromStartToAlphabet {
 				errMsg := "3: indent is invalid."
@@ -1122,24 +1127,37 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				// }
 			}
 		} else if fromStartToAlphabet < maxFromStartToAlphabet {
-
+			// fmt.Println("oneLine4:", string(oneLine))
 			findForStartIndent := false
 			for i := 0; i < len(forStartIndent); i++ {
 				if forStartIndent[i] == fromStartToAlphabet {
-					forStartIndent = forStartIndent[:len(forStartIndent)-1]
+					// forStartIndent = forStartIndent[:len(forStartIndent)-1]
 					findForStartIndent = true
 					break
 				}
 			}
 
 			if findForStartIndent == true {
-				fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAA")
+				// fmt.Println("123456789")
 				// [
 				// 	[[105 32 61 32 48] [32 105 32 60 32 51] [32 105 32 61 32 105 32 43 32 49]]
 				// 	[[106 32 61 32 48] [32 106 32 60 32 51] [32 106 32 61 32 106 32 43 32 49]]
 				// ]
 				popedForState := forState[len(forState)-1:]
-				forState = forState[:len(forState)-1]
+				// forState = forState[:len(forState)-1]
+				// rpnList, err := RPN(popedForState[0][2])
+				// if err != nil {
+				// 	return err
+				// }
+
+				// _, err = CalculateByRPN(rpnList, object, w)
+				// if err != nil {
+				// 	return err
+				// }
+
+				popedForStartLine := forStartLine[len(forStartLine)-1:]
+				// forStartLine = forStartLine[:len(forStartLine)-1]
+
 				rpnList, err := RPN(popedForState[0][2])
 				if err != nil {
 					return err
@@ -1150,11 +1168,40 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					return err
 				}
 
-				popedForStartLine := forStartIndent[len(forStartIndent)-1:]
-				forStartIndent = forStartIndent[:len(forStartIndent)-1]
+				rpnList, err = RPN(popedForState[0][1])
+				if err != nil {
+					return err
+				}
 
-				i = popedForStartLine[0]
-				continue
+				returnValue, err := CalculateByRPN(rpnList, object, w)
+				if err != nil {
+					return err
+				}
+
+				if string(returnValue) == "true" {
+					// isForTrue = true
+					i = popedForStartLine[0]
+
+					// rpnList, err := RPN(oneLine)
+
+					// if err != nil {
+					// 	return err
+					// }
+
+					// _, err = CalculateByRPN(rpnList, object, w)
+					// if err != nil {
+					// 	return err
+					// }
+
+					continue
+				} else if string(returnValue) == "false" {
+					// fmt.Println(999999)
+					// isForTrue = false
+
+					// continue
+				}
+
+				// continue
 			}
 
 			_, haveKey := fromStartToAlphabetStack[fromStartToAlphabet]
@@ -1162,6 +1209,10 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				errMsg := "1: indent is invalid."
 				return errors.New(errMsg)
 			}
+		}
+
+		if i == len(lines)-1 {
+			continue
 		}
 
 		// fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
@@ -1188,77 +1239,124 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 		}
 
+		// fmt.Println("EEEEEEEEEEEEEEEEEEEE", regexp.MustCompile(`for .+:`).Match(oneLine))
+
+		// fmt.Println("object: ", object)
+		// fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
+		// fmt.Println("fromStartToAlphabetStack: ", fromStartToAlphabetStack)
+		// fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
+		// fmt.Println("boundaryIndent: ", boundaryIndent)
+		// fmt.Println("isConditionTrue: ", isConditionTrue)
+		// fmt.Println("isNextIndent: ", isNextIndent)
+		// fmt.Println("forState: ", forState)
+		// fmt.Println("forStartLine: ", forStartLine)
+		// fmt.Println("forStartIndent: ", forStartIndent)
+		// fmt.Println("isForTrue: ", isForTrue)
+		// fmt.Println()
+		// fmt.Println()
+
 		if regexp.MustCompile(`if .+:`).Match(oneLine) {
 			noIf := regexp.MustCompile(` *if *`).ReplaceAll(oneLine, nil)
 			noIf = noIf[:len(noIf)-1]
 			oneLine = noIf
 			isNextIndent = true
 		} else if regexp.MustCompile(`for .+:`).Match(oneLine) {
+
 			noFor := regexp.MustCompile(` *for *`).ReplaceAll(oneLine, nil)
 			noFor = noFor[:len(noFor)-1]
 			splitFor := bytes.Split(noFor, []byte{Semicolon})
+
 			// bytePrint(splitFor)
 
 			// for _, v := range splitFor {
 
 			if len(splitFor) == 3 {
-				rpnList, err := RPN(splitFor[0])
-				if err != nil {
-					return err
+				// fmt.Println("forStartLine: ", forStartLine)
+				if len(forStartLine) == 0 {
+
+					forStartLine = append(forStartLine, i)
+
+					forStartIndent = append(forStartIndent, fromStartToAlphabet)
+
+					forState = append(forState, splitFor)
+
+					rpnList, err := RPN(splitFor[0])
+					if err != nil {
+						return err
+					}
+
+					_, err = CalculateByRPN(rpnList, object, w)
+					if err != nil {
+						return err
+					}
+
+					rpnList, err = RPN(splitFor[1])
+					if err != nil {
+						return err
+					}
+
+					returnValue, err := CalculateByRPN(rpnList, object, w)
+					if err != nil {
+						return err
+					}
+
+					if string(returnValue) == "true" {
+						isForTrue = true
+						isNextIndent = true
+					} else if string(returnValue) == "false" {
+						// fmt.Println(999999)
+						isForTrue = false
+						isNextIndent = false
+						// break
+					}
+
+				} else {
+
+					// rpnList, err := RPN(splitFor[2])
+					// if err != nil {
+					// 	return err
+					// }
+
+					// _, err = CalculateByRPN(rpnList, object, w)
+					// if err != nil {
+					// 	return err
+					// }
+					// fmt.Println(object, "CCC")
 				}
 
-				_, err = CalculateByRPN(rpnList, object, w)
-				if err != nil {
-					return err
-				}
+				// rpnList, err := RPN(splitFor[1])
+				// if err != nil {
+				// 	return err
+				// }
 
-				rpnList, err = RPN(splitFor[1])
-				if err != nil {
-					return err
-				}
+				// returnValue, err := CalculateByRPN(rpnList, object, w)
+				// if err != nil {
+				// 	return err
+				// }
 
-				returnValue, err := CalculateByRPN(rpnList, object, w)
-				if err != nil {
-					return err
-				}
+				// if string(returnValue) == "true" {
+				// 	isForTrue = true
+				// } else if string(returnValue) == "false" {
+				// 	fmt.Println(999999)
+				// 	isForTrue = false
+				// 	break
+				// }
 
-				if string(returnValue) == "true" {
-					isForTrue = true
-				} else if string(returnValue) == "false" {
-					isForTrue = false
-				}
-
-				forStartLine = append(forStartLine, i)
-
-				forStartIndent = append(forStartIndent, fromStartToAlphabet)
-
-				forState = append(forState, splitFor)
-
-				// continue
+				continue
 				// fmt.Println(forState, 999)
 			}
 
 			// }
 
 			// fmt.Println(splitFor, 9999)
-			isNextIndent = true
+
 		} else {
 			isNextIndent = false
 		}
 
-		fmt.Println("--" + string(oneLine) + "--")
-		fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
-		fmt.Println("fromStartToAlphabetStack: ", fromStartToAlphabetStack)
-		fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
-		fmt.Println("boundaryIndent: ", boundaryIndent)
-		fmt.Println("isConditionTrue: ", isConditionTrue)
-		fmt.Println("isNextIndent: ", isNextIndent)
-		fmt.Println("forState: ", forState)
-		fmt.Println("forStartLine: ", forStartLine)
-		fmt.Println("forStartIndent: ", forStartIndent)
-		fmt.Println("isForTrue: ", isForTrue)
-		fmt.Println()
-		fmt.Println()
+		// if isForTrue == true {
+		// 	continue
+		// }
 
 		if isConditionTrue == true {
 			if boundaryIndent < fromStartToAlphabet {
@@ -1269,14 +1367,19 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				// return errors.New(errMsg)
 			}
 		} else {
-			if boundaryIndent < fromStartToAlphabet {
-				// fmt.Println(989999)
+			if boundaryIndent < fromStartToAlphabet && isForTrue == false {
+				// fmt.Println("ABCDEFG")
 				continue
 			} else {
 
 			}
 		}
 
+		// if isForTrue == true {
+		// 	continue
+		// }
+
+		// fmt.Println("ZZZZZZZZZZZZZZZZZZZZZZZ", string(oneLine))
 		rpnList, err := RPN(oneLine)
 
 		if err != nil {
@@ -1287,6 +1390,8 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		if err != nil {
 			return err
 		}
+
+		// fmt.Println("object2: ", object)
 
 		if returnValue != nil && isNextIndent == true {
 			boundaryIndent = fromStartToAlphabet
