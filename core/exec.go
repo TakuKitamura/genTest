@@ -1093,7 +1093,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 		oneLine := lines[i]
 
-		// fmt.Println("oneLine: ", string(oneLine))
+		fmt.Println("line: ", "---"+string(oneLine)+"---")
 
 		fromStartToAlphabet := 0
 
@@ -1112,9 +1112,11 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 		}
 
-		// fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
-		// fmt.Println("fromStartToAlphabetStack: ", fromStartToAlphabetStack)
-		// fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
+		fmt.Println()
+		fmt.Println("fromStartToAlphabet: ", fromStartToAlphabet)
+		fmt.Println("fromStartToAlphabetStack: ", fromStartToAlphabetStack)
+		fmt.Println("maxFromStartToAlphabet: ", maxFromStartToAlphabet)
+		fmt.Println()
 
 		if fromStartToAlphabet == maxFromStartToAlphabet {
 			// fmt.Println("oneLine5:", string(oneLine))
@@ -1179,7 +1181,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				}
 
 				if string(returnValue) == "true" {
-					// isForTrue = true
+					isForTrue = true
 					i = popedForStartLine[0]
 
 					// rpnList, err := RPN(oneLine)
@@ -1196,7 +1198,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					continue
 				} else if string(returnValue) == "false" {
 					// fmt.Println(999999)
-					// isForTrue = false
+					isForTrue = false
 
 					// continue
 				}
@@ -1301,11 +1303,11 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					}
 
 					if string(returnValue) == "true" {
-						isForTrue = true
+						// isForTrue = true
 						isNextIndent = true
 					} else if string(returnValue) == "false" {
 						// fmt.Println(999999)
-						isForTrue = false
+						// isForTrue = false
 						isNextIndent = false
 						// break
 					}
