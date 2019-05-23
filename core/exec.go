@@ -1303,11 +1303,11 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					}
 
 					if string(returnValue) == "true" {
-						// isForTrue = true
+						isForTrue = true
 						isNextIndent = true
 					} else if string(returnValue) == "false" {
 						// fmt.Println(999999)
-						// isForTrue = false
+						isForTrue = false
 						isNextIndent = false
 						// break
 					}
@@ -1369,6 +1369,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				// return errors.New(errMsg)
 			}
 		} else {
+			fmt.Println(boundaryIndent < fromStartToAlphabet, isForTrue)
 			if boundaryIndent < fromStartToAlphabet && isForTrue == false {
 				// fmt.Println("ABCDEFG")
 				continue
