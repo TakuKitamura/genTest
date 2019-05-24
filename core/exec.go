@@ -1043,6 +1043,16 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 
 func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
+	// for i := 0; i < 3; i++ {
+	// 	for j := 0; j < 3; j++ {
+	// 		for k := 0; k < 3; k++ {
+	// 			fmt.Println(i, j, k)
+	// 		}
+
+	// 	}
+
+	// }
+
 	object := map[string][]byte{}
 
 	// fromStartToAlphabetStack := map[int]int{}
@@ -1093,7 +1103,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 		oneLine := lines[i]
 
-		fmt.Println("---" + string(oneLine) + "---")
+		// fmt.Println("---" + string(oneLine) + "---")
 
 		fromStartToAlphabet := 0
 
@@ -1146,10 +1156,14 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		}
 
 		if findForStartIndent == true {
-
 			popedForState := forState[len(forState)-1:]
 
 			popedForStartLine := forStartLine[len(forStartLine)-1:]
+
+			// fmt.Println("b_i: ", string(object["i"]))
+			// fmt.Println("b_j: ", string(object["j"]))
+			// fmt.Println("b_k: ", string(object["k"]))
+			// fmt.Println("b_condition: ", string(popedForState[0][1]))
 
 			rpnList, err := RPN(popedForState[0][2])
 			if err != nil {
@@ -1171,6 +1185,13 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				return err
 			}
 
+			// fmt.Println("i: ", string(object["i"]))
+			// fmt.Println("j: ", string(object["j"]))
+			// fmt.Println("k: ", string(object["k"]))
+			// fmt.Println("condition: ", string(popedForState[0][1]))
+			// fmt.Println("forStartLine: ", forStartLine)
+			// fmt.Println("returnValue: ", string(returnValue))
+
 			if string(returnValue) == "true" {
 				i = popedForStartLine[0]
 				isConditionTrue = true
@@ -1181,21 +1202,22 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				forState = forState[:len(forState)-1]
 
 				forStartIndent = forStartIndent[:len(forStartIndent)-1]
-				popedForStartLine := forStartLine[len(forStartLine)-1:]
+
+				// popedForStartLine := forStartLine[len(forStartLine)-1:]
 
 				forStartLine = forStartLine[:len(forStartLine)-1]
 
-				if len(forState) == 0 && len(forStartIndent) == 0 && len(forStartLine) == 0 {
-					continue
-				}
+				// if len(forState) == 0 && len(forStartIndent) == 0 && len(forStartLine) == 0 {
+				// 	continue
+				// }
 
-				i = popedForStartLine[0]
+				i = i - 1
 				continue
 			}
-		}
-
-		if i == len(lines)-1 {
-			continue
+		} else {
+			if i == len(lines)-1 {
+				continue
+			}
 		}
 
 		// _, haveKey := fromStartToAlphabetStack[fromStartToAlphabet]
@@ -1233,8 +1255,6 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			if err != nil {
 				return err
 			}
-
-			fmt.Println(string(returnValue), string(oneLine), 555)
 
 			// if returnValue != nil {
 			boundaryIndent = fromStartToAlphabet
