@@ -31,3 +31,16 @@ if year >= 0:
         print("うるう年ではありません｡")
 if year < 0:
     print("適切な西暦ではありません｡")
+
+titleFour = "できることその5: FOR文による分岐"
+print(titleFour)
+termSum = 0
+for n = 0; n < 10; n = n + 1:
+    term = 1 / ((2 * n) + 1)
+    if n % 2 == 0:
+        termSum = termSum + term
+    if n % 2 == 1:
+        termSum = termSum - term
+pi = termSum * 4
+print("ライプニッツの公式(n=10)より")
+print("π ≒",pi)
