@@ -675,6 +675,9 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 	// bytePrint(rpnList)
 	stack := [][]byte{}
 
+	variableLabel := "variable:"
+	// functionLabel := "function:"
+
 	operatorMap := operatorMap()
 	operators := [][]byte{}
 
@@ -727,18 +730,28 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 			}
 		}
 
+		// existDefineFunction := false
+
+		// for key := range object {
+		// 	if functionLabel+string(token) == key {
+		// 		existDefineFunction = true
+		// 		break
+		// 	}
+		// }
+
 		//	fmt.Println("token, ", string(token))
 		// fmt.Println("nowStack1, ")
 		// bytePrint(stack)
 		//	fmt.Println()
 
+		// fmt.Println(string(token), 111)
 		if existNumber {
 			stack = append(stack, token)
 		} else if existOperator {
 			if bytes.Equal(token, []byte{Equal}) == true {
 				//	fmt.Println(777938475879234)
 				// bytePrint((stack))
-				object[string(stack[0])] = stack[1]
+				object[variableLabel+string(stack[0])] = stack[1]
 				stack = [][]byte{}
 			} else if bytes.Equal(token, []byte{Comma}) == true {
 				// stack = append(stack, token)
@@ -794,7 +807,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 
 						// x = string(popedStack[:len(popedStack)-1])
 
-						xv, haveKey := object[string(popedStack)]
+						xv, haveKey := object[variableLabel+string(popedStack)]
 						if haveKey == true {
 							popedStack = xv
 						}
@@ -802,7 +815,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 						// y = string(accumulator[1:])
 						//	fmt.Println(x, y, 123456)
 
-						yv, haveKey := object[string(accumulator)]
+						yv, haveKey := object[variableLabel+string(accumulator)]
 						if haveKey == true {
 							accumulator = yv
 						}
@@ -883,7 +896,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 
 					var f64 float64
 					var err error
-					v, haveKey := object[string(stack[i])]
+					v, haveKey := object[variableLabel+string(stack[i])]
 					if haveKey == true {
 						f64, err = strconv.ParseFloat(string(v), 64)
 						if err != nil {
@@ -938,7 +951,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 					}
 
 					if existVariable == true {
-						printArgs = append(printArgs, object[string(stack[i])])
+						printArgs = append(printArgs, object[variableLabel+string(stack[i])])
 						continue
 					}
 
@@ -1008,7 +1021,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 
 		existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(stack[0])
 		if existAlphabet == true {
-			v, haveKey := object[string(stack[0])]
+			v, haveKey := object[variableLabel+string(stack[0])]
 			if haveKey == false {
 				fmt.Println("---" + string(stack[0]) + "---")
 				errMsg := "unknown variable."
@@ -1055,6 +1068,8 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	object := map[string][]byte{}
 
+	functionLabel := "function:"
+
 	// fromStartToAlphabetStack := map[int]int{}
 
 	// isNextIndent := false
@@ -1064,6 +1079,14 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 	boundaryIndent := 0
 
 	isConditionTrue := true
+
+	isFunc := false
+
+	funcStart := -1
+
+	returnLine := -1
+
+	jumpLine := -1
 
 	// isForTrue := false
 
@@ -1101,9 +1124,21 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	for i := 0; i < len(lines); i++ {
 
-		oneLine := lines[i]
+		if jumpLine != -1 {
+			i = jumpLine - 1
+			jumpLine = -1
+			// fmt.Println("jumpLine: ", i)
+			continue
+		}
 
-		// fmt.Println("---" + string(oneLine) + "---")
+		// if returnLine != -1 {
+		// 	fmt.Println("returnLine: ", returnLine, i)
+		// 	i = returnLine - 1
+		// 	returnLine = -1
+		// 	continue
+		// }
+
+		oneLine := lines[i]
 
 		fromStartToAlphabet := 0
 
@@ -1112,6 +1147,28 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			if word != WhiteSpace {
 				break
 			}
+		}
+		// fmt.Println(fromStartToAlphabet, funcStart)
+		if fromStartToAlphabet == funcStart {
+			// fmt.Println("---"+string(oneLine)+"---", isFunc)
+			if isFunc == true {
+				isFunc = false
+			} else {
+				if returnLine != -1 {
+					i = returnLine - 1
+					// fmt.Println(returnLine, 876)
+
+					returnLine = -1
+
+					continue
+				}
+			}
+
+			// funcStart = -1
+		}
+
+		if isFunc == true {
+			continue
 		}
 
 		// maxFromStartToAlphabet := 0
@@ -1156,13 +1213,14 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		}
 
 		if findForStartIndent == true {
+			// fmt.Println(string(oneLine))
 			popedForState := forState[len(forState)-1:]
 
 			popedForStartLine := forStartLine[len(forStartLine)-1:]
 
-			// fmt.Println("b_i: ", string(object["i"]))
-			// fmt.Println("b_j: ", string(object["j"]))
-			// fmt.Println("b_k: ", string(object["k"]))
+			// fmt.Println("b_i: ", string(object[variable+"i"]))
+			// fmt.Println("b_j: ", string(object[variable+"j"]))
+			// fmt.Println("b_k: ", string(object[variable+"k"]))
 			// fmt.Println("b_condition: ", string(popedForState[0][1]))
 
 			rpnList, err := RPN(popedForState[0][2])
@@ -1185,9 +1243,9 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				return err
 			}
 
-			// fmt.Println("i: ", string(object["i"]))
-			// fmt.Println("j: ", string(object["j"]))
-			// fmt.Println("k: ", string(object["k"]))
+			// fmt.Println("i: ", string(object[variable+"i"]))
+			// fmt.Println("j: ", string(object[variable+"j"]))
+			// fmt.Println("k: ", string(object[variable+"k"]))
 			// fmt.Println("condition: ", string(popedForState[0][1]))
 			// fmt.Println("forStartLine: ", forStartLine)
 			// fmt.Println("returnValue: ", string(returnValue))
@@ -1322,6 +1380,35 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				// }
 			}
 
+		} else if regexp.MustCompile(`func .+:`).Match(oneLine) {
+			noFunc := regexp.MustCompile(` *func *`).ReplaceAll(oneLine, nil)
+			noFunc = noFunc[:len(noFunc)-1]
+			sepalateIndex := bytes.Index(noFunc, []byte{LeftParenthesis})
+
+			if sepalateIndex == -1 {
+				errMsg := "invalid function"
+				return errors.New(errMsg)
+			}
+
+			funcName := noFunc[:sepalateIndex]
+			// funcArgs := noFunc[sepalateIndex:len(noFunc)]
+
+			// object[functionLabel+string(funcName)]
+			// a := splitNoFunc[1]
+			// args := []byte{LeftParenthesis, splitNoFunc[1]}
+			object[functionLabel+string(funcName)] = []byte(strconv.Itoa(i))
+			funcStart = fromStartToAlphabet
+			isFunc = true
+			continue
+
+			// rpnList, err := RPN(oneLine)
+
+			// bytePrint(rpnList)
+			// fmt.Println(999)
+
+			// returnLine = i + 1
+			// i = intV
+
 		} else {
 			// isNextIndent = false
 
@@ -1330,9 +1417,34 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 
 			rpnList, err := RPN(oneLine)
+			bytePrint(rpnList)
+			fmt.Println(string(oneLine))
 
 			if err != nil {
 				return err
+			}
+
+			existDefineFunction := false
+
+			for _, v := range rpnList {
+				vv, haveKey := object[functionLabel+string(v)]
+				if haveKey == true {
+					existDefineFunction = true
+					returnLine = i + 1
+
+					intVV, err := strconv.Atoi(string(vv))
+					if err != nil {
+						return err
+					}
+
+					jumpLine = intVV + 1
+					// fmt.Println(jumpLine)
+					break
+				}
+			}
+
+			if existDefineFunction == true {
+				continue
 			}
 
 			_, err = CalculateByRPN(rpnList, object, w)
