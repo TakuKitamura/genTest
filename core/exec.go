@@ -1023,24 +1023,29 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 	// }
 
 	if len(stack) == 1 {
-		if string(stack[0]) == "true" {
-			return []byte("true"), nil
-		} else if string(stack[0]) == "false" {
-			return []byte("false"), nil
-		}
 
-		existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(stack[0])
-		if existAlphabet == true {
-			v, haveKey := object[variableLabel+string(stack[0])]
-			if haveKey == false {
-				fmt.Println("---" + string(stack[0]) + "---")
-				errMsg := "unknown variable."
-				return nil, errors.New(errMsg)
+		_, isFunction := object[functionLabel+string(stack[0])]
+
+		if isFunction == false {
+			if string(stack[0]) == "true" {
+				return []byte("true"), nil
+			} else if string(stack[0]) == "false" {
+				return []byte("false"), nil
 			}
-			return v, nil
-		}
 
-		return stack[0], nil
+			existAlphabet := regexp.MustCompile(`^[A-Za-z]+`).Match(stack[0])
+			if existAlphabet == true {
+				v, haveKey := object[variableLabel+string(stack[0])]
+				if haveKey == false {
+					fmt.Println("---" + string(stack[0]) + "---")
+					errMsg := "unknown variable."
+					return nil, errors.New(errMsg)
+				}
+				return v, nil
+			}
+
+			return stack[0], nil
+		}
 	}
 
 	for i := 0; i < len(stack); i++ {
