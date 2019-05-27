@@ -676,7 +676,7 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 	stack := [][]byte{}
 
 	variableLabel := "variable:"
-	// functionLabel := "function:"
+	functionLabel := "function:"
 
 	operatorMap := operatorMap()
 	operators := [][]byte{}
@@ -980,7 +980,17 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 			}
 
 		} else if existAlphabet {
+			// fmt.Println(string(token))
+			// fmt.Println(object)
+			// v, haveKey := object[variableLabel+string(token)]
+			// if haveKey == true {
+			// 	token = v
+			// 	// errMsg := "undefined variable: " + string(token)
+			// 	// return nil, errors.New(errMsg)
+			// 	// stack = append(stack, token)
+			// }
 			stack = append(stack, token)
+
 		} else if existString {
 			stack = append(stack, token)
 		} else {
@@ -1033,14 +1043,38 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 		return stack[0], nil
 	}
 
+	for i := 0; i < len(stack); i++ {
+		v, haveKey := object[variableLabel+string(stack[i])]
+		if haveKey == true {
+			stack[i] = v
+		}
+	}
+
 	if len(stack) > 1 {
 
-		if bytes.Equal(stack[1], []byte{Dot}) == true {
-			errMsg := "unexpected [.]."
+		v, haveKey := object[functionLabel+string(stack[len(stack)-1])]
+		if haveKey == true {
+
+			splitArgs := bytes.Split(v, []byte{Comma})
+			// fmt.Println(splitArgs)
+			// bytePrint(stack)
+			if len(splitArgs) != len(stack) {
+				errMsg := "invalid function args."
+				return nil, errors.New(errMsg)
+			}
+
+			for i := 0; i < len(stack)-1; i++ {
+				object[variableLabel+string(splitArgs[i])] = stack[i]
+			}
+			// fmt.Println(object)
+		} else {
+			if bytes.Equal(stack[1], []byte{Dot}) == true {
+				errMsg := "unexpected [.]."
+				return nil, errors.New(errMsg)
+			}
+			errMsg := fmt.Sprintf("failed calculate.\nnow stack: %s", stack)
 			return nil, errors.New(errMsg)
 		}
-		errMsg := fmt.Sprintf("failed calculate.\nnow stack: %s", stack)
-		return nil, errors.New(errMsg)
 	}
 
 	// output := []byte{}
@@ -1126,8 +1160,9 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 		if jumpLine != -1 {
 			i = jumpLine - 1
+			// fmt.Println("jumpLine: ", jumpLine)
 			jumpLine = -1
-			// fmt.Println("jumpLine: ", i)
+
 			continue
 		}
 
@@ -1150,7 +1185,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		}
 		// fmt.Println(fromStartToAlphabet, funcStart)
 		if fromStartToAlphabet == funcStart {
-			// fmt.Println("---"+string(oneLine)+"---", isFunc)
+
 			if isFunc == true {
 				isFunc = false
 			} else {
@@ -1391,12 +1426,17 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 
 			funcName := noFunc[:sepalateIndex]
-			// funcArgs := noFunc[sepalateIndex:len(noFunc)]
+			funcValue := noFunc[sepalateIndex+1 : len(noFunc)-1]
+			if len(funcValue) > 0 {
+				funcValue = append(funcValue, Comma)
+			}
+			funcValue = append(funcValue, []byte(strconv.Itoa(i))...)
 
 			// object[functionLabel+string(funcName)]
 			// a := splitNoFunc[1]
 			// args := []byte{LeftParenthesis, splitNoFunc[1]}
-			object[functionLabel+string(funcName)] = []byte(strconv.Itoa(i))
+			// fmt.Println(string(funcValue))
+			object[functionLabel+string(funcName)] = funcValue
 			funcStart = fromStartToAlphabet
 			isFunc = true
 			continue
@@ -1417,8 +1457,8 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			}
 
 			rpnList, err := RPN(oneLine)
-			bytePrint(rpnList)
-			fmt.Println(string(oneLine))
+			// bytePrint(rpnList)
+			// fmt.Println(string(oneLine))
 
 			if err != nil {
 				return err
@@ -1432,19 +1472,21 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					existDefineFunction = true
 					returnLine = i + 1
 
-					intVV, err := strconv.Atoi(string(vv))
+					splitVV := bytes.Split(vv, []byte{Comma})
+
+					intVV, err := strconv.Atoi(string(splitVV[len(splitVV)-1]))
 					if err != nil {
 						return err
 					}
 
 					jumpLine = intVV + 1
-					// fmt.Println(jumpLine)
+					// bytePrint(rpnList)
 					break
 				}
 			}
 
 			if existDefineFunction == true {
-				continue
+				// continue
 			}
 
 			_, err = CalculateByRPN(rpnList, object, w)
