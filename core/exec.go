@@ -748,12 +748,11 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 		if existNumber {
 			stack = append(stack, token)
 		} else if existOperator {
-			if bytes.Equal(token, []byte{Equal}) == true {
-				//	fmt.Println(777938475879234)
-				// bytePrint((stack))
-				object[variableLabel+string(stack[0])] = stack[1]
-				stack = [][]byte{}
-			} else if bytes.Equal(token, []byte{Comma}) == true {
+			// if bytes.Equal(token, []byte{Equal}) == true {
+			// 	object[variableLabel+string(stack[0])] = stack[1]
+			// 	stack = [][]byte{}
+			// }
+			if bytes.Equal(token, []byte{Comma}) == true {
 				// stack = append(stack, token)
 				//	fmt.Println("hello!")
 			} else {
@@ -1061,8 +1060,6 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 		if haveKey == true {
 
 			splitArgs := bytes.Split(v, []byte{Comma})
-			// fmt.Println(splitArgs)
-			// bytePrint(stack)
 			if len(splitArgs) != len(stack) {
 				errMsg := "invalid function args."
 				return nil, errors.New(errMsg)
@@ -1105,9 +1102,13 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	// }
 
+	functionLabel := "function:"
+	variableLabel := "variable:"
+	returnValueLabel := "returnValue:"
+
 	object := map[string][]byte{}
 
-	functionLabel := "function:"
+	object[returnValueLabel] = nil
 
 	// fromStartToAlphabetStack := map[int]int{}
 
@@ -1268,9 +1269,21 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				return err
 			}
 
-			_, err = CalculateByRPN(rpnList, object, w)
-			if err != nil {
-				return err
+			if bytes.Equal(rpnList[len(rpnList)-1], []byte{Equal}) == true {
+				variableName := string(rpnList[0])
+				variableValue := rpnList[1 : len(rpnList)-1]
+
+				returnValue, err := CalculateByRPN(variableValue, object, w)
+				if err != nil {
+					return err
+				}
+
+				object[variableLabel+variableName] = returnValue
+			} else {
+				_, err = CalculateByRPN(rpnList, object, w)
+				if err != nil {
+					return err
+				}
 			}
 
 			rpnList, err = RPN(popedForState[0][1])
@@ -1391,9 +1404,21 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 					return err
 				}
 
-				_, err = CalculateByRPN(rpnList, object, w)
-				if err != nil {
-					return err
+				if bytes.Equal(rpnList[len(rpnList)-1], []byte{Equal}) == true {
+					variableName := string(rpnList[0])
+					variableValue := rpnList[1 : len(rpnList)-1]
+
+					returnValue, err := CalculateByRPN(variableValue, object, w)
+					if err != nil {
+						return err
+					}
+
+					object[variableLabel+variableName] = returnValue
+				} else {
+					_, err = CalculateByRPN(rpnList, object, w)
+					if err != nil {
+						return err
+					}
 				}
 
 				rpnList, err = RPN(splitFor[1])
@@ -1466,8 +1491,25 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		} else if regexp.MustCompile(`return .+`).Match(oneLine) {
 			// fmt.Println(string(oneLine), 777)
 			noReturn := regexp.MustCompile(` *return *`).ReplaceAll(oneLine, nil)
-			// fmt.Println(object)
-			fmt.Println("noReturn: ", string(noReturn))
+
+			rpnList, err := RPN(noReturn)
+			if err != nil {
+				return err
+			}
+
+			returnValue, err := CalculateByRPN(rpnList, object, w)
+			if err != nil {
+				return err
+			}
+
+			variableName, haveKey := object[returnValueLabel]
+
+			if haveKey == true {
+				object[returnValueLabel] = nil
+				object[variableLabel+string(variableName)] = returnValue
+				// fmt.Println(object, 111)
+			}
+
 		} else {
 			// isNextIndent = false
 
@@ -1475,8 +1517,11 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				continue
 			}
 
+			// fmt.Println(object)
 			rpnList, err := RPN(oneLine)
+			// fmt.Print("rpnList: ")
 			// bytePrint(rpnList)
+			// fmt.Println()
 			// fmt.Println(string(oneLine))
 
 			if err != nil {
@@ -1504,8 +1549,23 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				}
 			}
 
-			if existDefineFunction == true {
-				// continue
+			if bytes.Equal(rpnList[len(rpnList)-1], []byte{Equal}) == true {
+				variableName := string(rpnList[0])
+				variableValue := rpnList[1 : len(rpnList)-1]
+
+				returnValue, err := CalculateByRPN(variableValue, object, w)
+				if err != nil {
+					return err
+				}
+
+				if existDefineFunction == true {
+					object[returnValueLabel] = []byte(variableName)
+					// continue
+				} else {
+					object[variableLabel+variableName] = returnValue
+				}
+
+				continue
 			}
 
 			_, err = CalculateByRPN(rpnList, object, w)
@@ -1517,6 +1577,6 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	}
 
-	fmt.Println(object)
+	// fmt.Println(object)
 	return nil
 }
