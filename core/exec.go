@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"regexp"
 	"sort"
@@ -151,25 +150,25 @@ type StandardFunctionMap struct {
 
 func standardFunctionMap(w io.Writer) map[string]StandardFunctionMap {
 	standardFunctionMap := map[string]StandardFunctionMap{
-		string("sqrt"): StandardFunctionMap{
-			OperatorType: Function,
-			Argc:         1,
-			Priority:     1,
-			NormalFunc: func(x ...interface{}) (interface{}, error) {
-				if len(x) != 1 {
-					errMsg := fmt.Sprintf("%s args is invalid.", string("sqrt"))
-					return nil, errors.New(errMsg)
-				}
+		// string("sqrt"): StandardFunctionMap{
+		// 	OperatorType: Function,
+		// 	Argc:         1,
+		// 	Priority:     1,
+		// 	NormalFunc: func(x ...interface{}) (interface{}, error) {
+		// 		if len(x) != 1 {
+		// 			errMsg := fmt.Sprintf("%s args is invalid.", string("sqrt"))
+		// 			return nil, errors.New(errMsg)
+		// 		}
 
-				if xv, ok := x[0].(float64); ok {
-					sqrtValue := interface{}(math.Sqrt(xv))
-					return sqrtValue, nil
-				}
+		// 		if xv, ok := x[0].(float64); ok {
+		// 			sqrtValue := interface{}(math.Sqrt(xv))
+		// 			return sqrtValue, nil
+		// 		}
 
-				errMsg := fmt.Sprintf("can't cast with %s", string("sqrt"))
-				return nil, errors.New(errMsg)
-			},
-		},
+		// 		errMsg := fmt.Sprintf("can't cast with %s", string("sqrt"))
+		// 		return nil, errors.New(errMsg)
+		// 	},
+		// },
 		string("print"): StandardFunctionMap{
 			OperatorType: Function,
 			Argc:         1,
@@ -456,6 +455,7 @@ func isMathMark(char byte) bool {
 }
 
 func RPN(formula []byte) ([][]byte, error) {
+
 	stack := [][]byte{}
 	rpnList := [][]byte{}
 	normalFormulaList := [][]byte{}
@@ -493,9 +493,7 @@ func RPN(formula []byte) ([][]byte, error) {
 
 		tempFormula = append(tempFormula, formula[i])
 	}
-	//	fmt.Println(string(tempFormula), 777)
 	formula = tempFormula
-
 	for {
 		//	fmt.Println(string(formula))
 		matchNumberIndex := regexp.MustCompile(`^\d+\.?\d*|\.\d+`).FindIndex(formula)
@@ -514,6 +512,7 @@ func RPN(formula []byte) ([][]byte, error) {
 		matchAlphabet := []byte{}
 		if len(matchAlphabetIndex) > 0 {
 			if matchAlphabetIndex[0] == 0 {
+
 				matchAlphabet = formula[matchAlphabetIndex[0]:matchAlphabetIndex[1]]
 
 				normalFormulaList = append(normalFormulaList, matchAlphabet)
@@ -672,7 +671,6 @@ func RPN(formula []byte) ([][]byte, error) {
 }
 
 func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]byte, error) {
-	// bytePrint(rpnList)
 	stack := [][]byte{}
 
 	variableLabel := "variable:"
@@ -885,46 +883,48 @@ func CalculateByRPN(rpnList [][]byte, object map[string][]byte, w io.Writer) ([]
 				return nil, errors.New(errMsg)
 			}
 
-			argc := standardFunction[string(token)].Argc
+			// argc := standardFunction[string(token)].Argc
 
-			if string(token) == "sqrt" {
-				sqrtArgs := []interface{}{}
-				//	fmt.Println(argc, 123)
+			// if string(token) == "sqrt" {
+			// 	sqrtArgs := []interface{}{}
+			// 	//	fmt.Println(argc, 123)
 
-				for i := len(stack) - 1; i >= len(stack)-argc; i-- {
+			// 	for i := len(stack) - 1; i >= len(stack)-argc; i-- {
 
-					var f64 float64
-					var err error
-					v, haveKey := object[variableLabel+string(stack[i])]
-					if haveKey == true {
-						f64, err = strconv.ParseFloat(string(v), 64)
-						if err != nil {
-							return nil, err
-						}
-					} else {
-						f64, err = strconv.ParseFloat(string(stack[i]), 64)
-						if err != nil {
-							return nil, err
-						}
-					}
+			// 		var f64 float64
+			// 		var err error
+			// 		v, haveKey := object[variableLabel+string(stack[i])]
+			// 		if haveKey == true {
+			// 			f64, err = strconv.ParseFloat(string(v), 64)
+			// 			if err != nil {
+			// 				return nil, err
+			// 			}
+			// 		} else {
+			// 			f64, err = strconv.ParseFloat(string(stack[i]), 64)
+			// 			if err != nil {
+			// 				return nil, err
+			// 			}
+			// 		}
 
-					sqrtArgs = append(sqrtArgs, f64)
-				}
+			// 		sqrtArgs = append(sqrtArgs, f64)
+			// 	}
 
-				v, err := standardFunction[string(token)].NormalFunc(sqrtArgs...)
-				if err != nil {
-					return nil, err
-				}
+			// 	v, err := standardFunction[string(token)].NormalFunc(sqrtArgs...)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
 
-				if vFloat64, ok := v.(float64); ok {
-					answer := []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
-					stack = stack[:len(stack)-argc]
-					stack = append(stack, answer)
-				} else {
-					errMsg := "unknown InterfaceType"
-					return nil, errors.New(errMsg)
-				}
-			} else if string(token) == "print" {
+			// 	if vFloat64, ok := v.(float64); ok {
+			// 		answer := []byte(strconv.FormatFloat(vFloat64, 'f', 16, 64))
+			// 		stack = stack[:len(stack)-argc]
+			// 		stack = append(stack, answer)
+			// 	} else {
+			// 		errMsg := "unknown InterfaceType"
+			// 		return nil, errors.New(errMsg)
+			// 	}
+			// } else
+
+			if string(token) == "print" {
 				printArgs := []interface{}{}
 				//	fmt.Println(argc, 123)
 				// for i := len(stack) - 1; i >= len(stack)-argc; i-- {
@@ -1252,6 +1252,14 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				break
 			}
 		}
+
+		temp := regexp.MustCompile(`([^\d|^)])([-|+]\d+\.?\d*|\.\d+)`).ReplaceAllString(string(oneLine), `${1}(0${2})`)
+		temp = regexp.MustCompile(`([-|+])\(`).ReplaceAllString(temp, `${1}1*(`)
+		temp = regexp.MustCompile(`^([-|+]\d+\.?\d*|\.\d+)`).ReplaceAllString(temp, `(0${1})`)
+
+		oneLine = []byte(temp)
+
+		// fmt.Println("oneLine: ", temp)
 
 		if findForStartIndent == true {
 			// fmt.Println(string(oneLine))

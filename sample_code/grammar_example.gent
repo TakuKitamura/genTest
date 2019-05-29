@@ -2,8 +2,8 @@ print("このようなことしかできません｡")
 
 titleOne = "できることその1: 演算"
 print(titleOne)
-result = sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0)
-print("sqrt((2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0) is", result)
+result = (2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0
+print("(2.0 + (3.0 - 4.0) / 5.0) + 0.1 * 2.0 is", result)
 
 titleTwo = "できることその2: 評価"
 print(titleTwo)
