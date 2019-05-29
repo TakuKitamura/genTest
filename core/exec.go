@@ -1423,15 +1423,24 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		} else if regexp.MustCompile(`func .+:`).Match(oneLine) {
 			noFunc := regexp.MustCompile(` *func *`).ReplaceAll(oneLine, nil)
 			noFunc = noFunc[:len(noFunc)-1]
-			sepalateIndex := bytes.Index(noFunc, []byte{LeftParenthesis})
+			leftParenthesisIndex := bytes.Index(noFunc, []byte{LeftParenthesis})
 
-			if sepalateIndex == -1 {
+			if leftParenthesisIndex == -1 {
 				errMsg := "invalid function"
 				return errors.New(errMsg)
 			}
 
-			funcName := noFunc[:sepalateIndex]
-			funcValue := noFunc[sepalateIndex+1 : len(noFunc)-1]
+			rightParenthesisIndex := bytes.Index(noFunc, []byte{RightParenthesis})
+
+			if rightParenthesisIndex == -1 {
+				errMsg := "invalid function"
+				return errors.New(errMsg)
+			}
+
+			funcName := noFunc[:leftParenthesisIndex]
+			funcValue := noFunc[leftParenthesisIndex+1 : rightParenthesisIndex]
+			// fmt.Println("funcValue: ", string(funcValue))
+			funcValue = bytes.Replace(funcValue, []byte{WhiteSpace}, nil, -1)
 			if len(funcValue) > 0 {
 				funcValue = append(funcValue, Comma)
 			}
@@ -1454,6 +1463,11 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			// returnLine = i + 1
 			// i = intV
 
+		} else if regexp.MustCompile(`return .+`).Match(oneLine) {
+			// fmt.Println(string(oneLine), 777)
+			noReturn := regexp.MustCompile(` *return *`).ReplaceAll(oneLine, nil)
+			// fmt.Println(object)
+			fmt.Println("noReturn: ", string(noReturn))
 		} else {
 			// isNextIndent = false
 
@@ -1502,5 +1516,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		}
 
 	}
+
+	fmt.Println(object)
 	return nil
 }
