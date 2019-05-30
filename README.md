@@ -4,7 +4,7 @@
 ### Dependency
 - Go
 
-### Setup
+### Grammar Example
 ```sh
 $ cat sample_code/example1.gent && echo -e "\n\n---\n" && go run main.go sample_code/example1.gent 
 print("演算")
