@@ -44,3 +44,74 @@ for n = 0; n < 10; n = n + 1:
 pi = termSum * 4
 print("ライプニッツの公式(n=10)より")
 print("π ≒",pi)
+
+
+print("演算")
+resultOne = 1 + 2 - 3*4/5
+print("結果1:", resultOne)
+resultTwo = ((((1 + 2) - 3) * 4) / 5)
+print("結果2:", resultTwo)
+resultThree = resultTwo - resultOne
+print("結果3:", resultThree)
+
+print("式評価")
+boolOne = 1 < 2
+print("結果1:", boolOne)
+boolTwo = 1 > 2
+print("結果2:", boolTwo)
+boolThree = boolOne && boolTwo
+print("結果3:", boolThree)
+
+print("IF文")
+if 1 > 2:
+    print(1)
+    if 3 == 4:
+        print(2)
+if 1 < 2:
+    print(3)
+    if 3 != 4:
+        print(4)
+print(5)
+
+print("FOR文")
+for i = 0; i <= 2; i = i + 1:
+    for j = 0; j <= 2; j = j + 1:
+        for k = 0; k <= 2; k = k + 1:
+            print("i:", i ,"j:", j, "k:", k)
+
+print("関数")
+func addThree(a, b, c):
+    return a + b + c
+func hello():
+    print("Hello!")
+hello()
+result = addThree(1, 2, 3)
+print(result)
+
+func sqrt(n):
+    if n < 0:
+        r = -1
+    if n == 0:
+        r = 0
+    if n > 0:
+        r = 1
+        for j = 0; j < 10; j = j + 1:
+            r = ((n / r) + r) / 2
+    return r
+
+rootTwo = sqrt(2)
+a = 1
+b = 1 / rootTwo
+t = 1 / 4
+x = 1
+pi = 0
+
+for i = 1; i <= 3; i = i + 1:
+    an = (a + b) / 2
+    b = sqrt(a * b)
+    t = t - (x * (an - a) * (an - a))
+    x = x * 2
+    a = an
+    pi = (a + b) * (a + b) / (4 * t)
+
+print("π ≒", pi)
