@@ -16,7 +16,6 @@ playground.gent
 playground_test.go
 .vscode
 genTest
-example*.gent
 
 # temp
 *.tmp

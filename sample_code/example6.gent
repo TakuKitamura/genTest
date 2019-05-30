@@ -1,0 +1,29 @@
+func sqrt(n): // ニュートン法による､平方根の計算
+    if n < 0:
+        r = -1
+    if n == 0:
+        r = 0
+    if n > 0:
+        r = 1
+        for j = 0; j < 10; j = j + 1:
+            r = ((n / r) + r) / 2
+    return r
+
+
+
+rootTwo = sqrt(2)
+a = 1
+b = 1 / rootTwo
+t = 1 / 4
+x = 1
+pi = 0
+
+for i = 1; i <= 3; i = i + 1:
+    an = (a + b) / 2
+    b = sqrt(a * b)
+    t = t - (x * (an - a) * (an - a))
+    x = x * 2
+    a = an
+    pi = (a + b) * (a + b) / (4 * t)
+
+print("π ≒", pi) // ガウス＝ルジャンドルのアルゴリズムによる計算

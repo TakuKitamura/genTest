@@ -1,0 +1,7 @@
+print("演算")
+resultOne = 1 + 2 - 3*4/5
+print("結果1:", resultOne)
+resultTwo = ((((1 + 2) - 3) * 4) / 5)
+print("結果2:", resultTwo)
+resultThree = resultTwo - resultOne
+print("結果3:", resultThree)

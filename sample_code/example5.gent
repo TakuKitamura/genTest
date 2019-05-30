@@ -1,0 +1,8 @@
+print("関数")
+func addThree(a, b, c):
+    return a + b + c
+func hello():
+    print("Hello!")
+hello()
+result = addThree(1, 2, 3)
+print(result)

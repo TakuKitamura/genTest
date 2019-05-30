@@ -1,0 +1,5 @@
+print("FOR文")
+for i = 0; i <= 2; i = i + 1:
+    for j = 0; j <= 2; j = j + 1:
+        for k = 0; k <= 2; k = k + 1:
+            print("i:", i ,"j:", j, "k:", k)

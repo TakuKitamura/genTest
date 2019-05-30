@@ -1,0 +1,7 @@
+print("式評価")
+boolOne = 1 < 2
+print("結果1:", boolOne)
+boolTwo = 1 > 2
+print("結果2:", boolTwo)
+boolThree = boolOne && boolTwo
+print("結果3:", boolThree)
