@@ -1,6 +1,9 @@
 # GenTest
 良質なテストコードの自動生成による､ソフトウェアテスト環境の構築の実装｡
 
+### Dependency
+- Go
+
 ### Setup
 ```sh
 $ cat sample_code/example1.gent && echo -e "\n\n---\n" && go run main.go sample_code/example1.gent 
