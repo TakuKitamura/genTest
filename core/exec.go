@@ -1124,9 +1124,15 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 	funcStart := -1
 
-	returnLine := -1
+	// returnLine := -1
 
-	jumpLine := -1
+	returnLines := []int{}
+
+	nowFuncs := []string{}
+
+	jumpLines := []int{}
+
+	// jumpLine := -1
 
 	// isForTrue := false
 
@@ -1151,6 +1157,10 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			continue
 		}
 
+		if bytes.Index(oneLine, []byte{Slash, Slash}) > 0 {
+			oneLine = bytes.Split(oneLine, []byte{Slash, Slash})[0]
+		}
+
 		lines = append(lines, oneLine)
 	}
 
@@ -1163,14 +1173,18 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 	forStartIndent := []int{}
 
 	for i := 0; i < len(lines); i++ {
+		// fmt.Println("---" + string(lines[i]) + "---")
+		// fmt.Println("jumpLine: ", jumpLine)
+		// fmt.Println("returnLines: ", returnLines)
 
-		if jumpLine != -1 {
-			i = jumpLine - 1
-			// fmt.Println("jumpLine: ", jumpLine)
-			jumpLine = -1
+		// fmt.Println(string(lines[i]))
+		// if jumpLine != -1 {
+		// 	i = jumpLine - 1
 
-			continue
-		}
+		// 	jumpLine = -1
+
+		// 	continue
+		// }
 
 		// if returnLine != -1 {
 		// 	fmt.Println("returnLine: ", returnLine, i)
@@ -1178,6 +1192,16 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		// 	returnLine = -1
 		// 	continue
 		// }
+
+		if len(jumpLines) != 0 {
+			// fmt.Println(jumpLines)
+			jumpLine := jumpLines[len(jumpLines)-1:][0]
+			i = jumpLine - 1
+
+			jumpLines = jumpLines[:len(jumpLines)-1]
+
+			continue
+		}
 
 		oneLine := lines[i]
 
@@ -1189,17 +1213,29 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				break
 			}
 		}
+
+		if isConditionTrue == false && boundaryIndent < fromStartToAlphabet {
+			// fmt.Println(999999999)
+			continue
+		}
+
 		// fmt.Println(fromStartToAlphabet, funcStart)
 		if fromStartToAlphabet == funcStart {
-
 			if isFunc == true {
 				isFunc = false
+				// continue
 			} else {
-				if returnLine != -1 {
-					i = returnLine - 1
-					// fmt.Println(returnLine, 876)
+				// fmt.Println(jumpLines, returnLines, string(oneLine))
 
-					returnLine = -1
+				if len(returnLines) != 0 {
+					returnLine := returnLines[len(returnLines)-1:][0]
+					i = returnLine - 1
+
+					returnLines = returnLines[:len(returnLines)-1]
+
+					nowFuncs = nowFuncs[:len(nowFuncs)-1]
+
+					// returnLine = -1
 
 					continue
 				}
@@ -1247,7 +1283,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 		findForStartIndent := false
 		for i := 0; i < len(forStartIndent); i++ {
-			if forStartIndent[i] == fromStartToAlphabet {
+			if forStartIndent[i] >= fromStartToAlphabet {
 				findForStartIndent = true
 				break
 			}
@@ -1262,7 +1298,9 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		// fmt.Println("oneLine: ", temp)
 
 		if findForStartIndent == true {
-			// fmt.Println(string(oneLine))
+			// fmt.Println(string(lines[i]))
+			// fmt.Println(7777777777777)
+			// fmt.Println(forStartIndent, fromStartToAlphabet)
 			popedForState := forState[len(forState)-1:]
 
 			popedForStartLine := forStartLine[len(forStartLine)-1:]
@@ -1314,6 +1352,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 			if string(returnValue) == "true" {
 				i = popedForStartLine[0]
 				isConditionTrue = true
+
 				continue
 			} else if string(returnValue) == "false" {
 				isConditionTrue = false
@@ -1328,12 +1367,13 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 				// if len(forState) == 0 && len(forStartIndent) == 0 && len(forStartLine) == 0 {
 				// 	continue
-				// }
+				// }v
 
 				i = i - 1
 				continue
 			}
 		} else {
+			// fmt.Println(8888888888888)
 			if i == len(lines)-1 {
 				continue
 			}
@@ -1388,7 +1428,7 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 			continue
 		} else if regexp.MustCompile(`for .+:`).Match(oneLine) {
-
+			// fmt.Println(isConditionTrue)
 			noFor := regexp.MustCompile(` *for *`).ReplaceAll(oneLine, nil)
 			noFor = noFor[:len(noFor)-1]
 			splitFor := bytes.Split(noFor, []byte{Semicolon})
@@ -1510,10 +1550,15 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				return err
 			}
 
-			variableName, haveKey := object[returnValueLabel]
+			// fmt.Println(object)
 
-			if haveKey == true {
+			nowFunc := nowFuncs[len(nowFuncs)-1:][0]
+			// fmt.Println("nowFunc:", nowFunc)
+			variableName, haveKey := object[returnValueLabel+nowFunc]
+
+			if haveKey == true && len(variableName) > 0 {
 				object[returnValueLabel] = nil
+				// fmt.Println("variableName:", string(variableName))
 				object[variableLabel+string(variableName)] = returnValue
 				// fmt.Println(object, 111)
 			}
@@ -1521,16 +1566,12 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 		} else {
 			// isNextIndent = false
 
-			if isConditionTrue == false && boundaryIndent < fromStartToAlphabet {
-				continue
-			}
-
 			// fmt.Println(object)
+
 			rpnList, err := RPN(oneLine)
 			// fmt.Print("rpnList: ")
 			// bytePrint(rpnList)
 			// fmt.Println()
-			// fmt.Println(string(oneLine))
 
 			if err != nil {
 				return err
@@ -1538,11 +1579,41 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 			existDefineFunction := false
 
+			// fmt.Print("rpnList: ")
+			// bytePrint(rpnList)
+			// fmt.Println()
+
 			for _, v := range rpnList {
 				vv, haveKey := object[functionLabel+string(v)]
 				if haveKey == true {
 					existDefineFunction = true
-					returnLine = i + 1
+
+					haveReturnLine := false
+					for _, returnLineV := range returnLines {
+						if returnLineV == i+1 {
+							haveReturnLine = true
+							break
+						}
+					}
+
+					if haveReturnLine == false {
+						returnLines = append(returnLines, i+1)
+					}
+
+					haveNowFunc := false
+					for _, nowfuncV := range nowFuncs {
+						if nowfuncV == string(v) {
+							haveNowFunc = true
+							break
+						}
+					}
+
+					if haveNowFunc == false {
+						nowFuncs = append(nowFuncs, string(v))
+					}
+
+					// fmt.Println("returnLine:", returnLine)
+					// fmt.Println("returnLine:", returnLine)
 
 					splitVV := bytes.Split(vv, []byte{Comma})
 
@@ -1551,7 +1622,22 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 						return err
 					}
 
-					jumpLine = intVV + 1
+					haveJumpLine := false
+					for _, jupmLineV := range jumpLines {
+						if jupmLineV == intVV+1 {
+							haveJumpLine = true
+							break
+						}
+					}
+
+					if haveJumpLine == false {
+						jumpLines = append(jumpLines, intVV+1)
+					}
+
+					// jumpLine = intVV + 1
+					// fmt.Println("jumpLine:", jumpLine)
+					// fmt.Println("returnLines:", returnLines)
+					// fmt.Println()
 					// bytePrint(rpnList)
 					break
 				}
@@ -1567,7 +1653,9 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 				}
 
 				if existDefineFunction == true {
-					object[returnValueLabel] = []byte(variableName)
+					// fmt.Println(string(variableName))
+					nowFunc := nowFuncs[len(nowFuncs)-1:][0]
+					object[returnValueLabel+nowFunc] = []byte(variableName)
 					// continue
 				} else {
 					object[variableLabel+variableName] = returnValue
@@ -1575,7 +1663,10 @@ func Exec(scanner *bufio.Scanner, w io.Writer) error {
 
 				continue
 			}
-
+			// fmt.Println("AAAAAA")
+			// fmt.Println(object)
+			// bytePrint(rpnList)
+			// fmt.Println("AAAAAA")
 			_, err = CalculateByRPN(rpnList, object, w)
 			if err != nil {
 				return err
