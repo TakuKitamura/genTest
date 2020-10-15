@@ -106,7 +106,8 @@ print(result)
 関数
 Hello!
 6.0000000000000000
-$ cat sample_code/example6.gent && echo -e "\n\n---\n" && go run main.go sample_code/example6.gent 
+$ cat sample_code/example6.gent && echo -e "\n\n---\n" &&
+  go run main.go sample_code/example6.gent 
 func sqrt(n): // ニュートン法による､平方根の計算
     if n < 0:
         r = -1
